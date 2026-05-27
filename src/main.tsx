@@ -4,13 +4,31 @@ import { RootApp } from './RootApp';
 import { AuthProvider } from './wallet/AuthContext';
 import './styles.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AuthProvider>
-      <RootApp />
-    </AuthProvider>
-  </React.StrictMode>,
-);
+const rootElement = document.getElementById('root');
+
+function showBootError(message: string) {
+  if (!rootElement) {
+    return;
+  }
+  rootElement.innerHTML = `<p style="margin:2rem 1rem;font-family:system-ui,sans-serif;color:#b91c1c;text-align:center;line-height:1.6">${message}</p>`;
+}
+
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+try {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <AuthProvider>
+        <RootApp />
+      </AuthProvider>
+    </React.StrictMode>,
+  );
+} catch (error) {
+  const detail = error instanceof Error ? error.message : 'အမည်မသိ အမှား';
+  showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ကြည့်ပါ။`);
+}
 
 function isPhoneTestHost() {
   const host = window.location.hostname;

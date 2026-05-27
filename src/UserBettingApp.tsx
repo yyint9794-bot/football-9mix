@@ -450,67 +450,77 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     <div className={shellClass}>
       <div className="betting-app-shell hub">
         <header className="betting-hub-head">
-          <button type="button" className="menu-button" aria-label="Menu">
+          <button type="button" className="menu-button hub-menu" aria-label="Menu">
             <span />
             <span />
             <span />
           </button>
           <div className="betting-hub-brand">
-            <strong>9Mix</strong>
-            <small>{user.displayName}</small>
+            <strong className="betting-hub-logo">
+              <span className="betting-hub-logo-accent">9</span>Mix
+            </strong>
+            <small className="betting-hub-contact">Viber / Telegram — 09674646102</small>
+            <small className="betting-hub-user">{user.displayName}</small>
           </div>
           <button type="button" className="live-close-btn" onClick={onClose}>
             {closeLabel}
           </button>
         </header>
 
-        <div className="betting-balance-card">
-          <div>
-            <span>လက်ကျန်ငွေ</span>
-            <strong>{formatMmk(user.balance)}</strong>
+        <div className="betting-hub-main">
+          <div className="betting-balance-card">
+            <div className="betting-balance-top">
+              <div className="betting-balance-cell">
+                <span>လက်ကျန်ငွေ</span>
+                <strong>{formatMmk(user.balance)}</strong>
+              </div>
+              <div className="betting-balance-cell">
+                <span>ကြေးပွဲစဉ်များ</span>
+                <strong>{bettingRows.length}</strong>
+              </div>
+            </div>
+            <div className="betting-balance-bottom">
+              <span>လောင်းထားသောငွေ</span>
+              <strong>{formatMmk(openBetsEstimate)}</strong>
+            </div>
           </div>
-          <div>
-            <span>လောင်းထားသောငွေ</span>
-            <strong>{formatMmk(openBetsEstimate)}</strong>
-          </div>
-        </div>
 
-        <div className="betting-menu-grid">
-          <button
-            type="button"
-            onClick={() => {
-              setBetStatus('');
-              setLeagueFilter(null);
-              setScreen('maung');
-            }}
-          >
-            <span>⚽</span>
-            <b>မောင်း</b>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setBetStatus('');
-              setLeagueFilter(null);
-              setScreen('body-goal');
-            }}
-          >
-            <span>🎯</span>
-            <b>ဘော်ဒီ/ဂိုးပေါင်း</b>
-          </button>
-          <button type="button" onClick={() => setScreen('wallet')}>
-            <span>💰</span>
-            <b>ငွေစာရင်း</b>
-          </button>
-          <button type="button" onClick={() => void refresh()}>
-            <span>🔄</span>
-            <b>ဒေတာပြန်လည်ရယူ</b>
-          </button>
+          <div className="betting-menu-grid">
+            <button
+              type="button"
+              onClick={() => {
+                setBetStatus('');
+                setLeagueFilter(null);
+                setScreen('maung');
+              }}
+            >
+              <span>⚽</span>
+              <b>မောင်း</b>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBetStatus('');
+                setLeagueFilter(null);
+                setScreen('body-goal');
+              }}
+            >
+              <span>🎯</span>
+              <b>ဘော်ဒီ/ဂိုးပေါင်း</b>
+            </button>
+            <button type="button" onClick={() => setScreen('wallet')}>
+              <span>💰</span>
+              <b>ငွေစာရင်း</b>
+            </button>
+            <button type="button" onClick={() => void refresh()}>
+              <span>🔄</span>
+              <b>ဒေတာပြန်လည်ရယူ</b>
+            </button>
+          </div>
         </div>
 
         <p className="betting-hint">
-          ကြေးဒေတာ — Htay API + မြန်မာကြေး endpoint များမှ အလိုအလျောက် ရယူပါသည် ({bettingRows.length}{' '}
-          ပွဲ)
+          ကြေးဒေတာ — Htay API မှ အလိုအလျောက် ရယူပါသည်
         </p>
       </div>
     </div>

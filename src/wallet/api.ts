@@ -45,6 +45,8 @@ export function clearSavedLoginCredentials() {
   localStorage.removeItem(SAVED_PASS_KEY);
 }
 
+const WALLET_FETCH_TIMEOUT_MS = 15_000;
+
 async function walletFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
@@ -53,10 +55,24 @@ async function walletFetch<T>(path: string, options: RequestInit = {}): Promise<
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`/api/wallet/${path}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), WALLET_FETCH_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`/api/wallet/${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('ဆာဗာ မတုံ့ပြန်ပါ — အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ');
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 
   const raw = await response.text();
   let payload = {} as T & { error?: string };

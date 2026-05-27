@@ -12,24 +12,25 @@ export function BetWebPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState('');
-  const [autoTrying, setAutoTrying] = useState(true);
+  const [autoTrying, setAutoTrying] = useState(false);
   const autoLoginStarted = useRef(false);
 
   useEffect(() => {
-    if (loading || user || autoLoginStarted.current) {
-      if (user || !loading) {
-        setAutoTrying(false);
-      }
+    if (loading || user) {
+      return;
+    }
+
+    if (autoLoginStarted.current) {
       return;
     }
 
     const saved = getSavedLoginCredentials();
     if (!saved) {
-      setAutoTrying(false);
       return;
     }
 
     autoLoginStarted.current = true;
+    setAutoTrying(true);
     setUsername(saved.username);
     setPassword(saved.password);
 
@@ -56,10 +57,21 @@ export function BetWebPage() {
     }
   };
 
-  if (loading || (autoTrying && !user)) {
+  if (loading || autoTrying) {
     return (
       <div className="standalone-page">
         <p className="standalone-loading">9Mix လောင်းမှု ဖွင့်နေပါတယ်…</p>
+        {autoTrying ? (
+          <button
+            type="button"
+            className="ghost-button standalone-skip-auto"
+            onClick={() => {
+              setAutoTrying(false);
+            }}
+          >
+            ဝင်ရန် စာမျက်နှာ ဖွင့်မည်
+          </button>
+        ) : null}
       </div>
     );
   }
