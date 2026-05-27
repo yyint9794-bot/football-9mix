@@ -47,12 +47,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/9mix-football.apk public/app-version.json src/appDownload.ts
+          NEW_CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
+          OLD_CODE=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('public/app-version.json','utf8')).versionCode)}catch(e){console.log(0)}")
+          if [ "$NEW_CODE" -lt "$OLD_CODE" ]; then
+            echo "Refuse to downgrade app version $OLD_CODE -> $NEW_CODE"
+            exit 1
+          fi
+          git add public/downloads/9mix-football.apk public/app-version.json src/appDownload.ts functions/_generated/appVersion.mjs
           if git diff --staged --quiet; then
             echo "No APK or version file changes to commit."
             exit 0
           fi
-          git commit -m "ci: sync APK and web app download [skip ci]"
+          git commit -m "ci: sync APK v${NEW_CODE} and web download [skip ci]"
           git push
 
       - name: Deploy to Cloudflare Pages

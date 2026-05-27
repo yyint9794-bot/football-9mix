@@ -1,5 +1,9 @@
 name: Deploy site files
 
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
@@ -34,7 +38,7 @@ jobs:
           const fs = require('fs');
           const j = JSON.parse(fs.readFileSync('dist/app-version.json','utf8'));
           console.log('dist app-version:', j.versionCode, j.versionName);
-          if (j.versionCode < 6) process.exit(1);
+          if (j.versionCode < 7) process.exit(1);
           "
 
       - name: Deploy to Cloudflare Pages

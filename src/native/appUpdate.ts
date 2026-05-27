@@ -13,23 +13,37 @@ type AppUpdatePlugin = {
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
 
-const VERSION_SOURCES = [
-  'https://ballpwal.org/api/app-version',
-  'https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/app-version.json',
-  'https://ballpwal.org/app-version.json',
-];
+const GITHUB_RAW =
+  'https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/app-version.json';
+const JS_DELIVR =
+  'https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/app-version.json';
 
-function versionUrls(): string[] {
-  const urls = [...VERSION_SOURCES];
+function withCacheBust(url: string) {
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}cb=${Date.now()}`;
+}
+
+function versionSources(): string[] {
+  const base = [
+    'https://ballpwal.org/api/app-version',
+    GITHUB_RAW,
+    JS_DELIVR,
+    'https://ballpwal.org/app-version.json',
+  ];
+
   if (typeof window !== 'undefined' && window.location.origin) {
-    urls.push(`${window.location.origin}/app-version.json`);
-    urls.push(`${window.location.origin}/api/app-version`);
+    base.push(`${window.location.origin}/app-version.json`);
+    base.push(`${window.location.origin}/api/app-version`);
   }
-  return [...new Set(urls)];
+
+  return [...new Set(base.map(withCacheBust))];
 }
 
 async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  });
   if (!response.ok) {
     return null;
   }
@@ -40,11 +54,11 @@ async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
   return data;
 }
 
-/** Server API + GitHub + static — နံပါတ်အကြီးဆုံး */
+/** ဗားရှင်း အများဆုံး နံပါတ်ကို ယူ (GitHub cache ဟောင်း မသုံး) */
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   let best: AppVersionInfo | null = null;
 
-  for (const url of versionUrls()) {
+  for (const url of versionSources()) {
     try {
       const data = await fetchOneVersion(url);
       if (data && (!best || data.versionCode > best.versionCode)) {
@@ -55,25 +69,7 @@ export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
     }
   }
 
-  if (best) {
-    return best;
-  }
-
-  for (const url of VERSION_SOURCES) {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        await new Promise((resolve) => window.setTimeout(resolve, 600 * (attempt + 1)));
-        const data = await fetchOneVersion(url);
-        if (data) {
-          return data;
-        }
-      } catch {
-        // retry
-      }
-    }
-  }
-
-  return null;
+  return best;
 }
 
 export async function getInstalledVersionCode(): Promise<number> {
