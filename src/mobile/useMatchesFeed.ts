@@ -3,6 +3,7 @@ import { getFootballMatches } from '../api';
 import type { Match } from '../types';
 
 const EMPTY_ERROR = 'ဒေတာ မရပါ — အင်တာနက်/VPN စစ်ပြီး ထပ်စမ်းပါ';
+const LOAD_TIMEOUT_MS = 14_000;
 
 export function useMatchesFeed() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -14,25 +15,42 @@ export function useMatchesFeed() {
     setError(next.length ? '' : EMPTY_ERROR);
   }, []);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    const next = await getFootballMatches(signal);
-    applyMatches(next);
-    return next;
-  }, [applyMatches]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      const next = await getFootballMatches(signal, (partial) => {
+        if (partial.length) {
+          applyMatches(partial);
+          setLoading(false);
+        }
+      });
+      applyMatches(next);
+      return next;
+    },
+    [applyMatches],
+  );
 
   useEffect(() => {
     let disposed = false;
     const controller = new AbortController();
 
-    void load(controller.signal).catch((err: Error) => {
-      if (!disposed && err.name !== 'AbortError') {
-        setError(EMPTY_ERROR);
-      }
-    }).finally(() => {
+    const loadTimeout = window.setTimeout(() => {
       if (!disposed) {
         setLoading(false);
       }
-    });
+    }, LOAD_TIMEOUT_MS);
+
+    void load(controller.signal)
+      .catch((err: Error) => {
+        if (!disposed && err.name !== 'AbortError') {
+          setError(EMPTY_ERROR);
+        }
+      })
+      .finally(() => {
+        if (!disposed) {
+          setLoading(false);
+        }
+        window.clearTimeout(loadTimeout);
+      });
 
     const timer = window.setInterval(() => {
       void load().catch(() => {
@@ -43,6 +61,7 @@ export function useMatchesFeed() {
     return () => {
       disposed = true;
       controller.abort();
+      window.clearTimeout(loadTimeout);
       window.clearInterval(timer);
     };
   }, [load]);

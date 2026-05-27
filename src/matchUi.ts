@@ -88,6 +88,30 @@ export function canWatchMatch(match: Match) {
   return hasStream(match) && !isCompletedMatch(match);
 }
 
+/** မောင်း / ဘော်ဒီ — ပြီးသွားပွဲ၊ ရလဒ်ပါပွဲ မပြရ */
+export function isOpenForBetting(match: Match) {
+  if (isCompletedMatch(match) || hasMatchScore(match)) {
+    return false;
+  }
+
+  const kickoff = getMatchKickoffDate(match);
+  if (kickoff && kickoff.getTime() < Date.now() - 2 * 60 * 60 * 1000) {
+    return false;
+  }
+
+  const status = String(match.status || '').toLowerCase();
+  if (
+    status.includes('finished') ||
+    status.includes('completed') ||
+    status.includes('ft') ||
+    status.includes('ended')
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 export function isUpcomingMatch(match: Match) {
   if (isCompletedMatch(match) || isLiveMatch(match)) {
     return false;

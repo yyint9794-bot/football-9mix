@@ -103,6 +103,12 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
 
   useEffect(() => {
     let disposed = false;
+    const loadTimeout = window.setTimeout(() => {
+      if (!disposed) {
+        setLoading(false);
+      }
+    }, 14_000);
+
     getBettingMatches(undefined, (partial) => {
       if (!disposed && partial.length) {
         setMatches(partial);
@@ -123,10 +129,12 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         if (!disposed) {
           setLoading(false);
         }
+        window.clearTimeout(loadTimeout);
       });
 
     return () => {
       disposed = true;
+      window.clearTimeout(loadTimeout);
     };
   }, []);
 

@@ -1,6 +1,7 @@
 import { hasMyanmarOdds, isOddsClosed } from '../api';
 import { parseKickoffTime } from '../liveMatch';
 import type { Match } from '../types';
+import { isOpenForBetting } from '../matchUi';
 import type { BettingMatchRow, OddsBodySection, OddsGoalSection, OddsSection } from './types';
 
 function resolveBodyGivingTeam(match: Match, homeName: string, awayName: string, homeLine: string) {
@@ -414,7 +415,7 @@ function getKickoffMs(match: Match) {
 
 export function buildBettingRows(matches: Match[]): BettingMatchRow[] {
   return matches
-    .filter((match) => hasMyanmarOdds(match))
+    .filter((match) => hasMyanmarOdds(match) && isOpenForBetting(match))
     .map((match) => {
       const sections = extractMyanmarOdds(match);
       const body = sections.find((section): section is OddsBodySection => section.kind === 'body');

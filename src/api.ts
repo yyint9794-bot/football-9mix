@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import {
   applyScoresToMatch,
   hasMatchScore,
@@ -6,6 +7,7 @@ import {
   isWithinResultsWindow,
   parseMmkScoresPayload,
 } from './matchScore';
+import { isOpenForBetting } from './matchUi';
 import { parseKickoffTime } from './liveMatch';
 import { enrichMatchesWithLogos } from './teamLogoIndex';
 import { resolveMissingTeamLogos } from './teamLogoResolver';
@@ -32,6 +34,27 @@ const MMK_ENDPOINTS = [
 ];
 
 const MMK_RESULTS_ENDPOINTS = ['/mmk-autokyay/v3/results', '/mmk-autokyay/v2/results'];
+
+const FETCH_TIMEOUT_MS = 12_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  const parent = init.signal;
+  if (parent) {
+    if (parent.aborted) {
+      controller.abort();
+    } else {
+      parent.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
 
 type MmkTeam = {
   name?: string;
@@ -473,7 +496,7 @@ function mergeMatchData(primaryMatches: Match[], fallbackMatches: Match[]) {
 }
 
 async function fetchMatches(version: string, signal?: AbortSignal) {
-  const response = await fetch(footballEndpoint(version), {
+  const response = await fetchWithTimeout(footballEndpoint(version), {
     signal,
     headers: {
       'X-HtayApi-Key': API_KEY,
@@ -668,7 +691,7 @@ export function resolveLeagueLogo(logo: string | undefined, name: string) {
 }
 
 async function fetchMmkMatches(path: string, signal?: AbortSignal) {
-  const response = await fetch(`${BASE_URL}${path}?key=${API_KEY}`, {
+  const response = await fetchWithTimeout(`${BASE_URL}${path}?key=${API_KEY}`, {
     signal,
     headers: {
       'X-HtayApi-Key': API_KEY,
@@ -886,9 +909,13 @@ export async function getFootballMatches(
   matches = enrichMatchesWithLogos(matches);
   onUpdate?.(matches);
 
-  if (!signal?.aborted) {
-    matches = await resolveMissingTeamLogos(matches);
-    onUpdate?.(matches);
+  if (!signal?.aborted && !Capacitor.isNativePlatform()) {
+    try {
+      matches = await resolveMissingTeamLogos(matches);
+      onUpdate?.(matches);
+    } catch {
+      // logo resolve မအောင်မြင်ရင် ပွဲစဉ်ကို ဆက်ပြမည်
+    }
   }
 
   return matches;
@@ -914,28 +941,12 @@ export async function getBettingMatches(
     }
   }
 
-  const resultResponses = await Promise.allSettled(
-    MMK_RESULTS_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)),
-  );
-  const resultMatches: Match[] = [];
-  for (const result of resultResponses) {
-    if (result.status === 'fulfilled') {
-      resultMatches.push(...result.value);
-    }
-  }
-  if (resultMatches.length) {
-    matches = mergeResultsIntoMatches(matches, resultMatches);
-  }
-
   matches = enrichMatchesWithLogos(matches);
   onUpdate?.(matches);
 
-  if (!signal?.aborted) {
-    matches = await resolveMissingTeamLogos(matches);
-    onUpdate?.(matches);
-  }
-
-  return matches.filter((match) => hasMyanmarOdds(match) && !isOddsClosed(match));
+  return matches.filter(
+    (match) => hasMyanmarOdds(match) && !isOddsClosed(match) && isOpenForBetting(match),
+  );
 }
 
 function resultDisplayKey(match: Match) {
