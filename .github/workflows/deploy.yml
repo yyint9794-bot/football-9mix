@@ -35,6 +35,7 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - run: npm ci
       - name: Build web (APK from repo — Android build on workflow_dispatch only)
         run: npm run build
 
