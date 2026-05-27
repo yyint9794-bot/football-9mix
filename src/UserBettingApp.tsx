@@ -406,6 +406,9 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             >
               {homeName}
             </button>
+            <div className="bet-odds-pill" aria-hidden>
+              {bodyPill}
+            </div>
             <button
               type="button"
               className={`bet-team-btn away${isSelected(picks, String(row.match.id), 'body-away') ? ' selected' : ''}`}
@@ -418,9 +421,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             >
               {awayName}
             </button>
-            <span className="bet-odds-side" aria-hidden>
-              {bodyPill}
-            </span>
           </div>
         ) : null}
 
@@ -437,6 +437,9 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             >
               Over
             </button>
+            <div className="bet-odds-pill bet-odds-pill-goal" aria-hidden>
+              {overOdds}
+            </div>
             <button
               type="button"
               className={`bet-label-btn under${isSelected(picks, String(row.match.id), 'goal-under') ? ' selected' : ''}`}
@@ -448,9 +451,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             >
               Under
             </button>
-            <span className="bet-odds-center" aria-hidden>
-              {overOdds}
-            </span>
           </div>
         ) : null}
 

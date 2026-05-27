@@ -62,7 +62,10 @@ const updated = appDownload
     /const GH_APK = `[^`]+`;/,
     `const GH_APK = \`https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}\`;`,
   )
-  .replace(/export const APP_APK_BUILD = '[^']*';/, `export const APP_APK_BUILD = '${nextBuild}';`);
+  .replace(
+    /export const APP_APK_BUILD = (?:'[^']*'|`[^`]*`);/,
+    `export const APP_APK_BUILD = \`${nextBuild}\`;`,
+  );
 if (updated === appDownload) {
   console.warn('appDownload.ts: APP_APK_BUILD line not updated');
 } else {

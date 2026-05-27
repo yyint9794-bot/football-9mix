@@ -1,8 +1,9 @@
 /download.html  /download.html  200
 /apk.html  /apk.html  200
 /downloads/9mix-football-v11.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
-/downloads/9mix-football-v10.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
+/downloads/9mix-football-v8.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
 /downloads/9mix-football-v9.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
+/downloads/9mix-football-v10.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
 /downloads/9mix-football.apk  https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk  302
 /downloads/*  /downloads/:splat  200
 /app-version.json  /app-version.json  200

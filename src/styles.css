@@ -3223,9 +3223,8 @@ a.primary-button.download-hero-btn,
 }
 
 .bet-grid-row {
-  position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 6px;
   align-items: stretch;
   padding: 8px;
@@ -3243,7 +3242,7 @@ a.primary-button.download-hero-btn,
 .bet-label-btn {
   border: 0;
   border-radius: 8px;
-  padding: 12px 8px;
+  padding: 12px 6px;
   min-height: 52px;
   background: #4a4a4a;
   color: #fff;
@@ -3252,22 +3251,7 @@ a.primary-button.download-hero-btn,
   line-height: 1.25;
   text-align: center;
   cursor: pointer;
-}
-
-.bet-grid-row.body .bet-team-btn.home {
-  padding-right: 44px;
-}
-
-.bet-grid-row.body .bet-team-btn.away {
-  padding-left: 44px;
-}
-
-.bet-label-btn.over {
-  padding-right: 36px;
-}
-
-.bet-label-btn.under {
-  padding-left: 36px;
+  word-break: break-word;
 }
 
 .bet-label-btn {
@@ -3288,41 +3272,29 @@ a.primary-button.download-hero-btn,
   color: #e8f5e9;
 }
 
-.bet-odds-side,
-.bet-odds-center {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
+.bet-odds-pill {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 68px;
+  align-self: center;
+  min-width: 56px;
+  max-width: 76px;
   min-height: 40px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 8px;
   background: #1db954;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 900;
   text-align: center;
-  white-space: nowrap;
+  line-height: 1.15;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+  flex-shrink: 0;
 }
 
-.bet-grid-row.body.favor-home .bet-odds-side {
-  left: 50%;
-  transform: translate(calc(-100% - 5px), -50%);
-}
-
-.bet-grid-row.body.favor-away .bet-odds-side {
-  left: 50%;
-  transform: translate(5px, -50%);
-}
-
-.bet-grid-row.goal .bet-odds-center {
-  left: 50%;
-  transform: translate(-50%, -50%);
+.bet-odds-pill-goal {
+  font-size: 0.74rem;
 }
 
 .bet-closed-note {

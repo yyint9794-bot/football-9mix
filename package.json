@@ -16,6 +16,7 @@
     "release:bump": "node scripts/release.mjs --bump",
     "sync:web-download": "node scripts/sync-web-download.mjs",
     "firebase:remoteconfig": "firebase deploy --only remoteconfig",
+    "firebase:firestore-rules": "firebase deploy --only firestore:rules",
     "android:apk:full": "node scripts/run-gradle.mjs && node scripts/copy-apk.mjs",
     "android:open": "npx cap open android",
     "typecheck": "tsc -b",

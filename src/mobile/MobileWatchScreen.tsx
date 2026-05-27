@@ -1,4 +1,5 @@
 import { canWatchMatch } from '../api';
+import { LiveMatchChat } from '../live/LiveMatchChat';
 import { LiveStreamPlayer } from '../LiveStreamPlayer';
 import { MatchScoreBadge } from '../MatchScoreBadge';
 import type { Match } from '../types';
@@ -24,15 +25,18 @@ export function MobileWatchScreen({ match, onClose }: MobileWatchScreenProps) {
           <small>{match.league.name}</small>
         </div>
       </header>
-      <div className="m-watch-player">
-        {watchable ? (
-          <LiveStreamPlayer match={match} />
-        ) : (
-          <p className="m-watch-unavailable">ယခု ကြည့်ရှုလို့ မရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ</p>
-        )}
-      </div>
-      <div className="m-watch-meta">
-        <MatchScoreBadge match={match} showHalfTime className="match-score-badge live" />
+      <div className="m-watch-layout">
+        <div className="m-watch-player">
+          {watchable ? (
+            <LiveStreamPlayer match={match} />
+          ) : (
+            <p className="m-watch-unavailable">ယခု ကြည့်ရှုလို့ မရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ</p>
+          )}
+          <div className="m-watch-meta">
+            <MatchScoreBadge match={match} showHalfTime className="match-score-badge live" />
+          </div>
+        </div>
+        <LiveMatchChat match={match} />
       </div>
     </div>
   );
