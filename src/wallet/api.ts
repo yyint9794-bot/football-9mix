@@ -64,10 +64,22 @@ async function walletFetch<T>(path: string, options: RequestInit = {}): Promise<
     try {
       payload = JSON.parse(raw) as T & { error?: string };
     } catch {
-      throw new Error('Server response မမှန်ပါ — dev server ပြန် စတင်ပါ');
+      if (response.status === 404) {
+        throw new Error('Wallet API မတွေ့ပါ — /api/wallet deploy စစ်ပါ');
+      }
+      if (response.status >= 500) {
+        throw new Error(
+          'Wallet server မအလုပ်လုပ်ပါ — Cloudflare မှာ KV binding WALLET_KV ချိတ်ပြီး Redeploy လုပ်ပါ',
+        );
+      }
+      throw new Error('Server response မမှန်ပါ — ခဏနေပြီး ထပ်စမ်းပါ');
     }
   } else if (!response.ok) {
-    throw new Error('Wallet API မရပါ — npm run dev ပြန် စတင်ပါ');
+    throw new Error(
+      response.status === 404
+        ? 'Wallet API မတွေ့ပါ'
+        : 'Wallet API မရပါ — local မှာ npm run dev သုံးပါ',
+    );
   }
 
   if (!response.ok) {

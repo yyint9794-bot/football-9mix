@@ -32,17 +32,19 @@ Repo ကို Git hosting ပေါ် တင်ထားပါ။
 
 5. **Save and Deploy**
 
-## 3. KV namespace (wallet / login)
+## 3. KV namespace (wallet / login) — မဖြစ်မနေ
 
-Wallet သည် **Cloudflare KV** မှာ သိမ်းပါသည် (file system မရှိ)။
+Admin (`/admin`) နဲ့ User login (`/bet`) သည် **KV** မချိတ်ရင် ဝင်ရန် မရပါ။
 
 1. Dashboard → **Workers & Pages** → **KV** → **Create a namespace**  
    Name: `football-wallet` (ဥပမာ)
-2. Pages project → **Settings** → **Functions** → **KV namespace bindings**
+2. Pages project **`football-9mix`** → **Settings** → **Functions** → **KV namespace bindings**
 3. Add binding:
-   - **Variable name:** `WALLET_KV` (အတိအကျ)
+   - **Variable name:** `WALLET_KV` (အတိအကျ — စာလုံးမှားရင် login fail)
    - **KV namespace:** `football-wallet`
-4. **Redeploy** လုပ်ပါ
+4. **Deployments** → **Retry deployment** (သို့မဟုတ် Git push)
+
+မှားရင် error: `WALLET_KV binding မရှိပါ` သို့မဟုတ် `Server response မမှန်ပါ`
 
 `wrangler.toml` ထဲ `REPLACE_WITH_*` IDs ကို local `wrangler pages dev` အတွက်သာ — Git deploy မှာ Dashboard binding သည် လုံလောက်ပါသည်။
 
