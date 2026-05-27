@@ -3,7 +3,7 @@
  *   npm run release        — build APK, web download sync, push (CI deploy)
  *   npm run release:bump   — versionCode +1 ပြီးမှ release
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -13,10 +13,12 @@ const gradlePath = join(root, 'android', 'app', 'build.gradle');
 const isWin = process.platform === 'win32';
 
 function run(cmd, args = []) {
+  // Windows shell:true breaks git commit -m when message has ( ) +
+  const useShell = isWin && (cmd === 'npm' || cmd === 'npm.cmd');
   const result = spawnSync(cmd, args, {
     cwd: root,
     stdio: 'inherit',
-    shell: isWin,
+    shell: useShell,
   });
   return result.status ?? 1;
 }
@@ -74,12 +76,24 @@ const syncFiles = [
 ];
 
 const downloadsDir = join(root, 'public', 'downloads');
-if (existsSync(join(downloadsDir, '9mix-football.apk'))) {
-  syncFiles.unshift('public/downloads/9mix-football.apk');
-}
 const versionedApk = `public/downloads/9mix-football-v${versionCode}.apk`;
-if (existsSync(join(root, versionedApk))) {
-  syncFiles.unshift(versionedApk);
+const latestApk = 'public/downloads/9mix-football.apk';
+const maxGitApkBytes = 50 * 1024 * 1024;
+
+for (const rel of [versionedApk, latestApk]) {
+  const full = join(root, rel);
+  if (!existsSync(full)) {
+    continue;
+  }
+  const bytes = statSync(full).size;
+  if (bytes > maxGitApkBytes) {
+    console.warn(
+      `\n⚠ ${rel} = ${Math.round(bytes / 1024 / 1024)} MB — GitHub 100MB limit. APK ကို git မတင်ပါ (ဖုန်းသို့ ဒီဖိုင်ကို တိုက်ရိုက် install လုပ်ပါ).`,
+    );
+    console.warn('   GitHub Actions က APK ~10–35MB build လုပ်ပြီး web download ပြင်ပေးမည်.\n');
+    continue;
+  }
+  syncFiles.unshift(rel);
 }
 
 run('git', ['add', ...syncFiles]);
@@ -87,7 +101,7 @@ run('git', ['add', ...syncFiles]);
 if (run('git', ['diff', '--staged', '--quiet']) === 0) {
   console.log('\nပြောင်းလဲမှု မရှိ — ရှိပြီးသား sync ဖြစ်နေပါတယ်.');
 } else {
-  const msg = `release: app v${versionCode} (${versionName}) + web APK download`;
+  const msg = `release: app v${versionCode} ${versionName} web-apk-download`;
   if (run('git', ['commit', '-m', msg]) !== 0) {
     console.error('\nCommit မအောင်မြင်ပါ — git config / changes စစ်ပါ.');
     process.exit(1);

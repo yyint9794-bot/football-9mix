@@ -15,6 +15,8 @@
     "release": "node scripts/release.mjs",
     "release:bump": "node scripts/release.mjs --bump",
     "sync:web-download": "node scripts/sync-web-download.mjs",
+    "firebase:login": "firebase login",
+    "firebase:use": "firebase use ballpwal",
     "firebase:remoteconfig": "firebase deploy --only remoteconfig",
     "firebase:firestore-rules": "firebase deploy --only firestore:rules",
     "android:apk:full": "node scripts/run-gradle.mjs && node scripts/copy-apk.mjs",
@@ -40,7 +42,8 @@
     "@capacitor/cli": "^7.4.2",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "firebase-tools": "^14.27.0"
   },
   "engines": {
     "node": ">=20"
