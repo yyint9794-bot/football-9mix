@@ -1,7 +1,11 @@
-/downloads/*
-  Content-Type: application/vnd.android.package-archive
-  Content-Disposition: attachment
-  Cache-Control: no-cache, no-store, must-revalidate
-
 /app-version.json
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/api/*
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/downloads/*
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/download.html
+  Cache-Control: no-store, no-cache, must-revalidate

@@ -15,8 +15,9 @@ const siteApk = `https://ballpwal.org/downloads/9mix-football.apk?v=${versionCod
 const payload = {
   versionCode,
   versionName,
-  apkUrl: siteApk,
+  apkUrl: jsDelivrApk,
   apkUrlCdn: jsDelivrApk,
+  apkUrlSite: siteApk,
   releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Update စစ်ဆေးမှု ပြင်ဆင်ချက်',
 };
 
