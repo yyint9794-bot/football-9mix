@@ -5,6 +5,7 @@ import {
   fetchLatestAppVersion,
   getInstalledVersionCode,
   installAppUpdate,
+  isAppUpdatePluginAvailable,
   type AppVersionInfo,
 } from '../native/appUpdate';
 import { PUBLISHED_APK_URL, PUBLISHED_VERSION_CODE } from '../native/publishedVersion';
@@ -123,11 +124,18 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
     try {
       await installAppUpdate(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update မအောင်မြင်ပါ');
+      const msg = err instanceof Error ? err.message : 'Update မအောင်မြင်ပါ';
+      if (/not implemented/i.test(msg)) {
+        openBrowserDownload();
+        return;
+      }
+      setError(msg);
     } finally {
       setUpdating(false);
     }
   };
+
+  const nativeUpdate = isAppUpdatePluginAvailable();
 
   const openBrowserDownload = () => {
     window.location.href = PUBLISHED_APK_URL;
@@ -184,7 +192,16 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
         {debug ? <p className="m-update-hint">{debug}</p> : null}
         {latest?.releaseNotes ? <p className="m-update-notes">{latest.releaseNotes}</p> : null}
         <p className="m-update-hint">
-          <strong>Update ယခု လုပ်မည်</strong> နှိပ်ပါ — မရရင် အောက်က APK ဒေါင်းလုဒ် သုံးပါ။
+          {nativeUpdate ? (
+            <>
+              <strong>Update ယခု လုပ်မည်</strong> နှိပ်ပါ — App အသစ် ထပ်သွင်းပြီး ဖွင့်ပါ။
+            </>
+          ) : (
+            <>
+              ယခု App (v{installedCode}) မှာ တိုက်ရိုက်အပ်ဒိတ် မရသေး — <strong>APK ဒေါင်းလုဒ်</strong>{' '}
+              နှိပ်ပြီး ထပ်သွင်းပါ (ဖျက်စရာမလို)။
+            </>
+          )}
         </p>
         {error ? <p className="m-error">{error}</p> : null}
         <div className="m-update-actions">
@@ -192,13 +209,24 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
             type="button"
             className="m-btn m-btn-primary m-btn-block"
             disabled={updating}
-            onClick={() => void handleUpdate()}
+            onClick={() => void (nativeUpdate ? handleUpdate() : openBrowserDownload())}
           >
-            {updating ? 'ဒေါင်းလုဒ်လုပ်နေပါတယ်…' : 'Update ယခု လုပ်မည်'}
+            {updating
+              ? 'ဒေါင်းလုဒ်လုပ်နေပါတယ်…'
+              : nativeUpdate
+                ? 'Update ယခု လုပ်မည်'
+                : `APK ဒေါင်းလုဒ် (v${latest?.versionCode ?? PUBLISHED_VERSION_CODE})`}
           </button>
-          <button type="button" className="m-btn m-btn-ghost m-btn-block" disabled={updating} onClick={openBrowserDownload}>
-            APK ဒေါင်းလုဒ် (browser)
-          </button>
+          {nativeUpdate ? (
+            <button
+              type="button"
+              className="m-btn m-btn-ghost m-btn-block"
+              disabled={updating}
+              onClick={openBrowserDownload}
+            >
+              APK ဒေါင်းလုဒ် (browser)
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

@@ -20,6 +20,21 @@ type AppUpdatePlugin = {
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
 
+export function isAppUpdatePluginAvailable() {
+  return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('AppUpdate');
+}
+
+async function openApkDownload(url: string) {
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.open({ url });
+    return;
+  } catch {
+    // Browser plugin missing — WebView မှ ဒေါင်းလုဒ်
+  }
+  window.location.href = url;
+}
+
 const GITHUB_RAW =
   'https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/app-version.json';
 const JS_DELIVR =
@@ -128,9 +143,19 @@ export async function installAppUpdate(apkUrl: string) {
     return;
   }
 
+  if (!isAppUpdatePluginAvailable()) {
+    await openApkDownload(url);
+    return;
+  }
+
   try {
     await AppUpdateNative.installApk({ url });
-  } catch {
-    window.location.href = url;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/not implemented/i.test(msg)) {
+      await openApkDownload(url);
+      return;
+    }
+    await openApkDownload(url);
   }
 }
