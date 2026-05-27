@@ -24,7 +24,6 @@ import { MatchScoreBadge } from './MatchScoreBadge';
 import { preloadMatchLogos } from './teamLogoIndex';
 import { AdBanner, AD_SLOTS, VIDEO_AD_URL, resolveAdSlot } from './ads';
 import { SiteAnnouncementBar } from './SiteAnnouncementBar';
-import { SitePromoBanner } from './SitePromoBanner';
 import { LeagueLogo, TeamLogo } from './TeamLogo';
 import type { Match } from './types';
 
@@ -408,8 +407,7 @@ function App() {
           </div>
         </nav>
 
-        <SiteAnnouncementBar />
-        <SitePromoBanner slot="web" className="web-home-banner" />
+        <SiteAnnouncementBar slot="web" />
 
         {menuOpen ? (
           <>

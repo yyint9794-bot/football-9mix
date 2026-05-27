@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { getFootballMatches } from './api';
+import { getBettingMatches } from './api';
 import {
   buildBettingRows,
   formatBodyAwayPickLabel,
@@ -16,8 +16,7 @@ import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
 import { UserBetSidebar } from './UserBetSidebar';
 import { MatchResultsPanel } from './MatchResultsPanel';
-import { SiteAnnouncementBar } from './SiteAnnouncementBar';
-import { SitePromoBanner } from './SitePromoBanner';
+import { BettingChrome } from './BettingChrome';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { UserBetsPanel } from './UserBetsPanel';
 import { UserChangePasswordSheet } from './UserChangePasswordSheet';
@@ -104,7 +103,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
 
   useEffect(() => {
     let disposed = false;
-    getFootballMatches(undefined, (partial) => {
+    getBettingMatches(undefined, (partial) => {
       if (!disposed && partial.length) {
         setMatches(partial);
         setLoading(false);
@@ -487,16 +486,18 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   const renderSubPage = (title: string, content: ReactNode) => (
     <div className={shellClass}>
       <div className="betting-app-shell hub-sub payment-flow">
-        <header className="betting-topbar dark">
-          <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
-            ←
-          </button>
-          <strong>{title}</strong>
-          <button type="button" className="live-close-btn" onClick={onClose}>
-            {closeLabel}
-          </button>
-        </header>
-        {content}
+        <BettingChrome>
+          <header className="betting-topbar dark">
+            <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
+              ←
+            </button>
+            <strong>{title}</strong>
+            <button type="button" className="live-close-btn" onClick={onClose}>
+              {closeLabel}
+            </button>
+          </header>
+          {content}
+        </BettingChrome>
       </div>
     </div>
   );
@@ -530,7 +531,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     const filterActive = Boolean(leagueFilter && leagueFilter.size < availableLeagues.length);
     return (
       <div className={shellClass}>
-        <div className="betting-app-shell dark bet-odds-screen">
+        <BettingChrome>
+          <div className="betting-app-shell dark bet-odds-screen">
           {renderBettingTopbar(screen === 'maung' ? 'မောင်း' : 'ဘော်ဒီ/ဂိုးပေါင်း')}
 
           {filterActive ? (
@@ -539,10 +541,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             </p>
           ) : null}
 
-          <SiteAnnouncementBar />
-
           <div className="bet-odds-body">
-            <SitePromoBanner slot="bet" className="bet-screen-banner" />
             <div className="bet-list">
               {loading ? <p className="bet-loading">API ကြေးဒေတာ ဖတ်နေပါတယ်…</p> : null}
               {error ? <p className="bet-error">{error}</p> : null}
@@ -576,13 +575,15 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               onClose={() => setShowLeagueFilter(false)}
             />
           ) : null}
-        </div>
+          </div>
+        </BettingChrome>
       </div>
     );
   }
 
   return (
     <div className={shellClass}>
+      <BettingChrome>
       <div className="betting-app-shell hub">
         <UserBetSidebar
           open={sidebarOpen}
@@ -613,8 +614,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
           />
         ) : null}
 
-        <SiteAnnouncementBar />
-
         <header className="betting-hub-head">
           <button
             type="button"
@@ -639,7 +638,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         </header>
 
         <div className="betting-hub-main">
-          <SitePromoBanner slot="hub" className="bet-hub-banner" />
           <div className="betting-balance-card">
             <div className="betting-balance-top">
               <div className="betting-balance-cell">
@@ -719,6 +717,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         </div>
 
       </div>
+      </BettingChrome>
     </div>
   );
 }

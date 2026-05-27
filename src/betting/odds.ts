@@ -91,19 +91,22 @@ function extractStructuredOdds(value: Record<string, unknown>, match: Match): Od
     });
   }
 
-  if ('goalTotal' in value || 'goalTotalPrice' in value) {
-    const goalLine = formatLine(value.goalTotal);
-    const goalPrice = formatOddsRate(value.goalTotalPrice);
+  const goalLineRaw = formatLine(value.goalTotal ?? match.goalTotal);
+  const goalOverRaw = formatOddsRate(
+    (value as Record<string, unknown>).over_price ??
+      value.goalTotalPrice ??
+      match.goalTotalPrice,
+  );
+  const goalUnderRaw = formatOddsRate((value as Record<string, unknown>).under_price);
 
-    if (goalLine || goalPrice) {
-      sections.push({
-        kind: 'goal',
-        title: 'ဂိုးပေါင်း',
-        goalLine: goalLine || '—',
-        overRate: goalPrice || '—',
-        underRate: '—',
-      });
-    }
+  if (goalLineRaw || goalOverRaw || goalUnderRaw) {
+    sections.push({
+      kind: 'goal',
+      title: 'ဂိုးပေါင်း',
+      goalLine: goalLineRaw || '—',
+      overRate: goalOverRaw || goalUnderRaw || '—',
+      underRate: goalUnderRaw && goalUnderRaw !== goalOverRaw ? goalUnderRaw : '—',
+    });
   }
 
   return sections.slice(0, 3);

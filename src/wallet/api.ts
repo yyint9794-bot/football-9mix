@@ -13,7 +13,9 @@ export type PaymentConfig = {
   wave: { number: string; label: string };
 };
 
-export type SiteBannerSlot = 'web' | 'bet' | 'hub' | 'app';
+export type SiteBannerSlot = 'web' | 'user';
+
+export type AnnouncementSlot = 'web' | 'bet';
 
 export type SiteBanner = {
   imageUrl: string;
@@ -22,9 +24,14 @@ export type SiteBanner = {
   alt: string;
 };
 
+export type SiteAnnouncement = {
+  text: string;
+  enabled: boolean;
+};
+
 export type SiteSettings = {
   payment: PaymentConfig;
-  announcement: { text: string; enabled: boolean };
+  announcements: Record<AnnouncementSlot, SiteAnnouncement>;
   banners: Record<SiteBannerSlot, SiteBanner>;
 };
 
@@ -202,12 +209,13 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
     const payment = await fetchPaymentConfig();
     return {
       payment,
-      announcement: { text: '', enabled: false },
+      announcements: {
+        web: { text: '', enabled: false },
+        bet: { text: '', enabled: false },
+      },
       banners: {
         web: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
-        bet: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
-        hub: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
-        app: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
+        user: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
       },
     };
   }

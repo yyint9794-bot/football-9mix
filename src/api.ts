@@ -13,15 +13,20 @@ import type { FootballResponse, Match } from './types';
 const API_KEY = import.meta.env.VITE_HTAY_API_KEY ?? 'demoapi';
 const BASE_URL = 'https://htayapi.com';
 const PRIMARY_VERSION: string = import.meta.env.VITE_HTAY_FOOTBALL_VERSION ?? 'v7';
-const MMK_ENDPOINTS = [
-  '/mmk-autokyay/livedata',
+/** MMK ကြေးအတွက် ဦးစားပေး — v3 ကို အရင်ဆုံး merge (ပိုမှန်သော ကြေး) */
+const MMK_BETTING_ENDPOINTS = [
   '/mmk-autokyay/v3/body-goalboung',
   '/mmk-autokyay/v3/moung',
-  '/mmk-autokyay/v3/live',
   '/mmk-autokyay/v2/body-goalboung',
   '/mmk-autokyay/v2/moung',
   '/mmk-autokyay/body-goalboung',
   '/mmk-autokyay/moung',
+];
+
+const MMK_ENDPOINTS = [
+  ...MMK_BETTING_ENDPOINTS,
+  '/mmk-autokyay/livedata',
+  '/mmk-autokyay/v3/live',
 ];
 
 const MMK_RESULTS_ENDPOINTS = ['/mmk-autokyay/v3/results', '/mmk-autokyay/v2/results'];
@@ -133,7 +138,37 @@ function buildMmkOddsPayload(match: MmkMatch) {
   return undefined;
 }
 
+function mmkSourcePriority(source: string | undefined) {
+  const path = String(source || '');
+  if (path.includes('/v3/body-goalboung')) {
+    return 50;
+  }
+  if (path.includes('/v3/moung')) {
+    return 48;
+  }
+  if (path.includes('/v2/body-goalboung')) {
+    return 40;
+  }
+  if (path.includes('/v2/moung')) {
+    return 38;
+  }
+  if (path.includes('body-goalboung')) {
+    return 30;
+  }
+  if (path.includes('moung')) {
+    return 28;
+  }
+  if (path.includes('livedata') || path.includes('/live')) {
+    return 5;
+  }
+  return 10;
+}
+
 function getMatchKey(match: Match) {
+  const mmkId = String(match.mmkMatchId || match.matchId || '').trim();
+  if (mmkId && mmkId !== 'undefined') {
+    return `id:${mmkId}`;
+  }
   return `${getMatchTimeBucket(match.time)}|${match.homeTeam?.name}|${match.awayTeam?.name}`.toLowerCase();
 }
 
@@ -170,6 +205,10 @@ function leaguesLikelySame(leagueA: string, leagueB: string) {
 }
 
 function matchOddsScore(streamMatch: Match, oddsMatch: Match) {
+  if (getMatchKey(streamMatch) === getMatchKey(oddsMatch)) {
+    return 25;
+  }
+
   let score = 0;
 
   if (getMatchTimeBucket(streamMatch.time) === getMatchTimeBucket(oddsMatch.time)) {
@@ -291,11 +330,20 @@ function mergeOddsInto(target: Match, source: Match): Match {
         (sourceOdds as Record<string, unknown>).goalTotal != null),
   );
 
-  if (targetHasStructured && !sourceHasStructured) {
+  const targetPriority = mmkSourcePriority(String(target.mmkSource || ''));
+  const sourcePriority = mmkSourcePriority(String(source.mmkSource || ''));
+
+  if (targetHasStructured && !sourceHasStructured && targetPriority >= sourcePriority) {
+    return target;
+  }
+  if (targetHasStructured && sourceHasStructured && targetPriority > sourcePriority) {
     return target;
   }
 
-  const sameTeams = teamsLikelySame(target, source);
+  const sameTeams = teamsLikelySame(target, source) || getMatchKey(target) === getMatchKey(source);
+  if (!sameTeams) {
+    return target;
+  }
 
   const mergeSideLogo = (side: 'home' | 'away') => {
     const targetLogo = normalizeLogoUrl(side === 'home' ? target.homeTeam?.logo : target.awayTeam?.logo);
@@ -349,22 +397,9 @@ function mergeOddsInto(target: Match, source: Match): Match {
   };
 }
 
-function findOddsByLeague(streamMatch: Match, oddsPool: Match[]) {
-  const leagueName = streamMatch.league?.name || '';
-  if (!leagueName) {
-    return null;
-  }
-
-  return (
-    oddsPool.find(
-      (candidate) => hasMyanmarOdds(candidate) && leaguesLikelySame(leagueName, candidate.league?.name || ''),
-    ) ?? null
-  );
-}
-
-function findBestOddsMatch(streamMatch: Match, oddsPool: Match[]) {
+function findBestOddsMatch(streamMatch: Match, oddsPool: Match[], minScore = 11) {
   let best: Match | null = null;
-  let bestScore = 3;
+  let bestScore = minScore - 1;
 
   for (const candidate of oddsPool) {
     if (!hasMyanmarOdds(candidate) || isOddsClosed(candidate)) {
@@ -378,7 +413,7 @@ function findBestOddsMatch(streamMatch: Match, oddsPool: Match[]) {
     }
   }
 
-  return best ?? findOddsByLeague(streamMatch, oddsPool);
+  return best;
 }
 
 function mergeMatchData(primaryMatches: Match[], fallbackMatches: Match[]) {
@@ -488,8 +523,12 @@ function normalizeMmkMatch(match: MmkMatch, source: string): Match {
     : String(match.status || (match.is_finished || match.completed ? 'Completed' : 'Coming Soon'));
   const mmkOdds = buildMmkOddsPayload(match);
 
+  const mmkMatchId = String(match.id ?? match.matchId ?? '').trim();
+
   return {
-    id: `mmk-${source}-${match.id ?? match.matchId ?? `${homeName}-${awayName}`}`,
+    id: `mmk-${source}-${mmkMatchId || `${homeName}-${awayName}`}`,
+    mmkMatchId: mmkMatchId || undefined,
+    matchId: mmkMatchId || undefined,
     league: {
       name: leagueName,
       logo: '',
@@ -638,7 +677,17 @@ function mergeUniqueMatches(primaryMatches: Match[], extraMatches: Match[]) {
 
   for (const mmk of extraMatches) {
     const mmkKey = getMatchKey(mmk);
-    if (!hasMyanmarOdds(mmk) || attachedMmkKeys.has(mmkKey) || merged.has(mmkKey)) {
+    if (!hasMyanmarOdds(mmk)) {
+      continue;
+    }
+
+    if (merged.has(mmkKey)) {
+      merged.set(mmkKey, mergeOddsInto(merged.get(mmkKey)!, mmk));
+      attachedMmkKeys.add(mmkKey);
+      continue;
+    }
+
+    if (attachedMmkKeys.has(mmkKey)) {
       continue;
     }
 
@@ -775,6 +824,50 @@ export async function getFootballMatches(
   }
 
   return matches;
+}
+
+/** လောင်းကွင်း — MMK ကြေးဒေတာကိုသာ တိုက်ရိုက်ယူ (stream နှင့် မှားမယ့် ကြေး merge လျှော့) */
+export async function getBettingMatches(
+  signal?: AbortSignal,
+  onUpdate?: (matches: Match[]) => void,
+): Promise<Match[]> {
+  let matches: Match[] = [];
+
+  for (const path of MMK_BETTING_ENDPOINTS) {
+    if (signal?.aborted) {
+      break;
+    }
+    try {
+      const batch = await fetchMmkMatches(path, signal);
+      matches = mergeUniqueMatches(matches, batch);
+      onUpdate?.(matches);
+    } catch {
+      // endpoint တစ်ခု ပျက်ရင် ကျန်ကို ဆက်သုံး
+    }
+  }
+
+  const resultResponses = await Promise.allSettled(
+    MMK_RESULTS_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)),
+  );
+  const resultMatches: Match[] = [];
+  for (const result of resultResponses) {
+    if (result.status === 'fulfilled') {
+      resultMatches.push(...result.value);
+    }
+  }
+  if (resultMatches.length) {
+    matches = mergeResultsIntoMatches(matches, resultMatches);
+  }
+
+  matches = enrichMatchesWithLogos(matches);
+  onUpdate?.(matches);
+
+  if (!signal?.aborted) {
+    matches = await resolveMissingTeamLogos(matches);
+    onUpdate?.(matches);
+  }
+
+  return matches.filter((match) => hasMyanmarOdds(match) && !isOddsClosed(match));
 }
 
 function resultDisplayKey(match: Match) {

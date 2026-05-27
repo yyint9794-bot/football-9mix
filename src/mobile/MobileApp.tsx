@@ -10,7 +10,6 @@ import { MobileWatchScreen } from './MobileWatchScreen';
 import { getMobileTabFromPath, navigateMobileTab, type MobileTab } from './mobileNav';
 import { useMatchesFeed } from './useMatchesFeed';
 import { SiteAnnouncementBar } from '../SiteAnnouncementBar';
-import { SitePromoBanner } from '../SitePromoBanner';
 import './mobile.css';
 
 const TABS: Array<{ id: MobileTab; label: string; icon: string }> = [
@@ -77,8 +76,7 @@ export function MobileApp() {
         </a>
       </header>
 
-      <SiteAnnouncementBar />
-      <SitePromoBanner slot="app" className="m-app-banner" />
+      {tab === 'home' ? <SiteAnnouncementBar slot="web" /> : null}
 
       <main className="m-app-main">
         {tab === 'home' ? (

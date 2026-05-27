@@ -1,4 +1,6 @@
-export type SiteBannerSlot = 'web' | 'bet' | 'hub' | 'app';
+export type SiteBannerSlot = 'web' | 'user';
+
+export type AnnouncementSlot = 'web' | 'bet';
 
 export type SiteBanner = {
   imageUrl: string;
@@ -7,15 +9,17 @@ export type SiteBanner = {
   alt: string;
 };
 
+export type SiteAnnouncement = {
+  text: string;
+  enabled: boolean;
+};
+
 export type SiteSettings = {
   payment: {
     kbz: { number: string; label: string };
     wave: { number: string; label: string };
   };
-  announcement: {
-    text: string;
-    enabled: boolean;
-  };
+  announcements: Record<AnnouncementSlot, SiteAnnouncement>;
   banners: Record<SiteBannerSlot, SiteBanner>;
 };
 

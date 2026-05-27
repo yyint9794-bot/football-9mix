@@ -1,8 +1,13 @@
+import type { AnnouncementSlot } from './siteSettings';
 import { useSiteSettings } from './SiteSettingsProvider';
 
-export function SiteAnnouncementBar() {
+type SiteAnnouncementBarProps = {
+  slot: AnnouncementSlot;
+};
+
+export function SiteAnnouncementBar({ slot }: SiteAnnouncementBarProps) {
   const settings = useSiteSettings();
-  const announcement = settings?.announcement;
+  const announcement = settings?.announcements?.[slot];
 
   if (!announcement?.enabled || !announcement.text) {
     return null;

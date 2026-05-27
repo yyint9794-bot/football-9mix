@@ -17,10 +17,17 @@ type UserPaymentPanelProps = {
 
 type Step = 'method' | 'details' | 'form';
 
-const METHOD_META: Record<PaymentMethod, { label: string; logo: string }> = {
-  kbz: { label: 'KBZ Pay', logo: '/images/payments/kbz-pay.png' },
-  wave: { label: 'Wave Pay', logo: '/images/payments/wave-pay.png' },
+const METHOD_LOGOS: Record<PaymentMethod, string> = {
+  kbz: '/images/payments/kbz-pay.png',
+  wave: '/images/payments/wave-pay.png',
 };
+
+function methodLabel(method: PaymentMethod, config: PaymentConfig | null) {
+  if (!config) {
+    return method === 'kbz' ? 'KBZ Pay' : 'Wave Pay';
+  }
+  return method === 'kbz' ? config.kbz.label : config.wave.label;
+}
 
 export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
   const { user, refresh } = useAuth();
@@ -151,10 +158,10 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
           <section className="payment-step payment-step-fill">
             <h3>{mode === 'deposit' ? 'ငွေသွင်း နည်းလမ်း ရွေးပါ' : 'ငွေထုတ် နည်းလမ်း ရွေးပါ'}</h3>
             <div className="payment-method-grid">
-              {(Object.keys(METHOD_META) as PaymentMethod[]).map((key) => (
+              {(['kbz', 'wave'] as PaymentMethod[]).map((key) => (
                 <button key={key} type="button" className="payment-method-card" onClick={() => selectMethod(key)}>
-                  <img src={METHOD_META[key].logo} alt={METHOD_META[key].label} />
-                  <b>{METHOD_META[key].label}</b>
+                  <img src={METHOD_LOGOS[key]} alt={methodLabel(key, config)} />
+                  <b>{methodLabel(key, config)}</b>
                 </button>
               ))}
             </div>
@@ -168,9 +175,9 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
                 ← နည်းလမ်း ပြန်ရွေးမည်
               </button>
               <div className="payment-admin-card">
-                <img src={METHOD_META[method].logo} alt="" className="payment-admin-logo" />
+                <img src={METHOD_LOGOS[method]} alt="" className="payment-admin-logo" />
                 <div>
-                  <span>Admin {METHOD_META[method].label}</span>
+                  <span>{methodLabel(method, config)}</span>
                   <strong>{activeNumber || 'နံပါတ် မသတ်မှတ်ရသေးပါ'}</strong>
                 </div>
                 <button type="button" className="payment-copy-btn" onClick={() => void handleCopyNumber()}>
@@ -201,12 +208,12 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
               ← နောက်သို့
             </button>
             <p className="payment-selected">
-              {METHOD_META[method].label} · {mode === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
+              {methodLabel(method, config)} · {mode === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
             </p>
 
             {mode === 'withdraw' ? (
               <p className="payment-hint payment-hint-light">
-                {METHOD_META[method].label} သို့ ထုတ်ယူရန် အောက်ပါအချက်အလက် ဖြည့်ပါ
+                {methodLabel(method, config)} သို့ ထုတ်ယူရန် အောက်ပါအချက်အလက် ဖြည့်ပါ
               </p>
             ) : (
               <p className="payment-hint payment-hint-light">လွဲပြီးပါက အောက်တွင် ဖြည့်ပြီး ပို့ပါ</p>
