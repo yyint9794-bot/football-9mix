@@ -3,4 +3,7 @@ compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
-# KV: bind WALLET_KV in Pages Dashboard → Settings → Functions (not here until you have real IDs).
+# KV (Admin + User login) — docs/KV_SETUP.md
+[[kv_namespaces]]
+binding = "WALLET_KV"
+id = "bc9dd5cfce4b44d397e7c127bf418853"
