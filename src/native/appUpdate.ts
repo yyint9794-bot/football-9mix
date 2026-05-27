@@ -1,9 +1,16 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import {
+  PUBLISHED_APK_URL,
+  PUBLISHED_RELEASE_NOTES,
+  PUBLISHED_VERSION_CODE,
+  PUBLISHED_VERSION_NAME,
+} from './publishedVersion';
 
 export type AppVersionInfo = {
   versionCode: number;
   versionName: string;
   apkUrl: string;
+  apkUrlCdn?: string;
   releaseNotes?: string;
 };
 
@@ -26,8 +33,8 @@ function withCacheBust(url: string) {
 function versionSources(): string[] {
   const base = [
     'https://ballpwal.org/api/app-version',
-    GITHUB_RAW,
     JS_DELIVR,
+    GITHUB_RAW,
     'https://ballpwal.org/app-version.json',
   ];
 
@@ -37,6 +44,15 @@ function versionSources(): string[] {
   }
 
   return [...new Set(base.map(withCacheBust))];
+}
+
+function publishedFallback(): AppVersionInfo {
+  return {
+    versionCode: PUBLISHED_VERSION_CODE,
+    versionName: PUBLISHED_VERSION_NAME,
+    apkUrl: PUBLISHED_APK_URL,
+    releaseNotes: PUBLISHED_RELEASE_NOTES,
+  };
 }
 
 async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
@@ -51,10 +67,13 @@ async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
   if (!data?.versionCode || data.versionCode < 1) {
     return null;
   }
-  return data;
+  return {
+    ...data,
+    apkUrl: data.apkUrlCdn || data.apkUrl || PUBLISHED_APK_URL,
+  };
 }
 
-/** ဗားရှင်း အများဆုံး နံပါတ်ကို ယူ (GitHub cache ဟောင်း မသုံး) */
+/** အင်တာနက်မှ နံပါတ်အကြီးဆုံး + APK ထဲ ဗားရှင်း */
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   let best: AppVersionInfo | null = null;
 
@@ -69,7 +88,16 @@ export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
     }
   }
 
-  return best;
+  const published = publishedFallback();
+  if (!best || published.versionCode > best.versionCode) {
+    return published;
+  }
+
+  return {
+    ...best,
+    versionCode: Math.max(best.versionCode, published.versionCode),
+    apkUrl: best.apkUrlCdn || best.apkUrl || PUBLISHED_APK_URL,
+  };
 }
 
 export async function getInstalledVersionCode(): Promise<number> {
@@ -81,18 +109,28 @@ export async function getInstalledVersionCode(): Promise<number> {
     const { App } = await import('@capacitor/app');
     const info = await App.getInfo();
     const build = Number.parseInt(String(info.build), 10);
-    return Number.isFinite(build) && build > 0 ? build : 0;
+    if (Number.isFinite(build) && build > 0) {
+      return build;
+    }
   } catch {
-    return 0;
+    // fall through
   }
+
+  return 0;
 }
 
 export async function installAppUpdate(apkUrl: string) {
+  const url = apkUrl || PUBLISHED_APK_URL;
+
   if (!Capacitor.isNativePlatform()) {
     const { triggerApkDownload } = await import('../appDownload');
     await triggerApkDownload();
     return;
   }
 
-  await AppUpdateNative.installApk({ url: apkUrl });
+  try {
+    await AppUpdateNative.installApk({ url });
+  } catch {
+    window.location.href = url;
+  }
 }

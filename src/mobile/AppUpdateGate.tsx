@@ -1,12 +1,13 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   fetchLatestAppVersion,
   getInstalledVersionCode,
   installAppUpdate,
   type AppVersionInfo,
 } from '../native/appUpdate';
+import { PUBLISHED_APK_URL, PUBLISHED_VERSION_CODE } from '../native/publishedVersion';
 
 type GateState = 'checking' | 'ready' | 'blocked' | 'check-failed';
 
@@ -14,8 +15,7 @@ type AppUpdateGateProps = {
   children: ReactNode;
 };
 
-/** blocked သာ မှတ်ထား — ready cache မသုံး (update မလွှတ်အောင်) */
-const BLOCKED_CACHE_KEY = 'ballpwal-update-blocked-v2';
+const BLOCKED_CACHE_KEY = 'ballpwal-update-blocked-v3';
 
 type BlockedCache = {
   latest: AppVersionInfo;
@@ -46,16 +46,18 @@ function writeBlockedCache(cache: BlockedCache) {
 function clearBlockedCache() {
   try {
     sessionStorage.removeItem(BLOCKED_CACHE_KEY);
+    sessionStorage.removeItem('ballpwal-update-blocked-v2');
+    sessionStorage.removeItem('ballpwal-update-gate-v1');
   } catch {
     // ignore
   }
 }
 
 function needsUpdate(remote: AppVersionInfo, localCode: number) {
-  return localCode < remote.versionCode;
+  const required = Math.max(remote.versionCode, PUBLISHED_VERSION_CODE);
+  return localCode < required;
 }
 
-/** Native App — update မလုပ်ရင် children မပြပါ */
 export function AppUpdateGate({ children }: AppUpdateGateProps) {
   const blockedBoot = Capacitor.isNativePlatform() ? readBlockedCache() : null;
   const [gate, setGate] = useState<GateState>(() => {
@@ -69,10 +71,11 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   const [installedName, setInstalledName] = useState(blockedBoot?.installedName ?? '');
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
-  const checkedRef = useRef(false);
+  const [debug, setDebug] = useState('');
 
   const applyCheck = async () => {
-    const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
+    const localCode = await getInstalledVersionCode();
+    const remote = await fetchLatestAppVersion();
 
     let versionLabel = '';
     try {
@@ -81,14 +84,16 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
       versionLabel = '';
     }
 
+    setInstalledCode(localCode);
+    setInstalledName(versionLabel);
+    setDebug(`ဖုန်း build ${localCode} · server v${remote?.versionCode ?? '?'} · APKထဲ v${PUBLISHED_VERSION_CODE}`);
+
     if (!remote?.versionCode) {
       setGate('check-failed');
       return;
     }
 
     setLatest(remote);
-    setInstalledCode(localCode);
-    setInstalledName(versionLabel);
 
     if (needsUpdate(remote, localCode)) {
       setGate('blocked');
@@ -101,10 +106,9 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   };
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform() || checkedRef.current) {
+    if (!Capacitor.isNativePlatform()) {
       return;
     }
-    checkedRef.current = true;
     void applyCheck().catch(() => setGate('check-failed'));
   }, []);
 
@@ -113,18 +117,20 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   }
 
   const handleUpdate = async () => {
-    if (!latest) {
-      return;
-    }
+    const url = latest?.apkUrl || PUBLISHED_APK_URL;
     setError('');
     setUpdating(true);
     try {
-      await installAppUpdate(latest.apkUrl);
+      await installAppUpdate(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Update မအောင်မြင်ပါ');
     } finally {
       setUpdating(false);
     }
+  };
+
+  const openBrowserDownload = () => {
+    window.location.href = PUBLISHED_APK_URL;
   };
 
   const handleRetry = () => {
@@ -149,13 +155,17 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
     return (
       <div className="m-update-block">
         <p className="m-update-block-title">ဗားရှင်း စစ်၍ မရပါ</p>
-        <p className="m-update-block-msg">
-          အင်တာနက် / VPN စစ်ပြီး ပြန် စမ်းပါ။ Update အသစ် ရယူရန် ချိတ်ဆက်မှု လိုအပ်ပါသည်။
-        </p>
+        <p className="m-update-block-msg">VPN ပိတ်ပြီး WiFi သုံးပါ။ အောက်ပါ ခလုတ်နဲ့ APK တိုက်ရိုက်ဒေါင်းလုဒ်လုပ်နိုင်ပါတယ်။</p>
+        {debug ? <p className="m-update-hint">{debug}</p> : null}
         {error ? <p className="m-error">{error}</p> : null}
-        <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={handleRetry}>
-          ပြန် စမ်းမည်
-        </button>
+        <div className="m-update-actions">
+          <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={openBrowserDownload}>
+            APK ဒေါင်းလုဒ် (v{PUBLISHED_VERSION_CODE})
+          </button>
+          <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={handleRetry}>
+            ပြန် စမ်းမည်
+          </button>
+        </div>
       </div>
     );
   }
@@ -171,19 +181,23 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
             {latest?.versionName ?? '—'} (v{latest?.versionCode ?? '?'})
           </strong>
         </p>
+        {debug ? <p className="m-update-hint">{debug}</p> : null}
         {latest?.releaseNotes ? <p className="m-update-notes">{latest.releaseNotes}</p> : null}
         <p className="m-update-hint">
-          <strong>Update ယခု လုပ်မည်</strong> နှိပ်ပါ — App ဖျက်စရာမလိုပါ။
+          <strong>Update ယခု လုပ်မည်</strong> နှိပ်ပါ — မရရင် အောက်က APK ဒေါင်းလုဒ် သုံးပါ။
         </p>
         {error ? <p className="m-error">{error}</p> : null}
         <div className="m-update-actions">
           <button
             type="button"
             className="m-btn m-btn-primary m-btn-block"
-            disabled={updating || !latest}
+            disabled={updating}
             onClick={() => void handleUpdate()}
           >
             {updating ? 'ဒေါင်းလုဒ်လုပ်နေပါတယ်…' : 'Update ယခု လုပ်မည်'}
+          </button>
+          <button type="button" className="m-btn m-btn-ghost m-btn-block" disabled={updating} onClick={openBrowserDownload}>
+            APK ဒေါင်းလုဒ် (browser)
           </button>
         </div>
       </div>
