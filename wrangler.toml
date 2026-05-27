@@ -1,0 +1,11 @@
+name = "football-9mix"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# Create KV in Cloudflare Dashboard → Workers & Pages → KV → Create namespace.
+# Then paste the namespace ID below (production + preview).
+[[kv_namespaces]]
+binding = "WALLET_KV"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"

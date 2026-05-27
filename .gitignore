@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.vercel/
+data/wallet-db.json
+vite.config.js
+*.tsbuildinfo
+.DS_Store

@@ -1,0 +1,18 @@
+{
+  "name": "Football Stream Hub",
+  "short_name": "Football Hub",
+  "description": "Premium football fixtures and live stream companion powered by Htay API.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0fa86b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

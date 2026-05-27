@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/team-logo",
+      "destination": "/api/team-logo"
+    },
+    {
+      "source": "/api/hls-proxy",
+      "destination": "/api/hls-proxy"
+    },
+    {
+      "source": "/api/wallet/:path*",
+      "destination": "/api/wallet?path=:path*"
+    }
+  ]
+}

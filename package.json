@@ -1,0 +1,29 @@
+{
+  "name": "football-stream-hub",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "phone": "node scripts/phone-url.mjs",
+    "share": "node scripts/share-phone.mjs",
+    "phone:share": "node scripts/phone-share.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "hls.js": "^1.6.16",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.60.0"
+  }
+}
