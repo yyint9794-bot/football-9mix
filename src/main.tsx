@@ -45,16 +45,18 @@ window.addEventListener('unhandledrejection', (event) => {
   showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ပါ`);
 });
 
+const appTree = (
+  <AuthProvider>
+    <SiteSettingsProvider>
+      <RootApp />
+    </SiteSettingsProvider>
+  </AuthProvider>
+);
+
 void clearStaleServiceWorkers().finally(() => {
   try {
     ReactDOM.createRoot(rootElement).render(
-      <React.StrictMode>
-        <AuthProvider>
-          <SiteSettingsProvider>
-            <RootApp />
-          </SiteSettingsProvider>
-        </AuthProvider>
-      </React.StrictMode>,
+      Capacitor.isNativePlatform() ? appTree : <React.StrictMode>{appTree}</React.StrictMode>,
     );
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'အမည်မသိ အမှား';
@@ -74,7 +76,7 @@ function isPhoneTestHost() {
   );
 }
 
-if ('serviceWorker' in navigator && !isPhoneTestHost()) {
+if ('serviceWorker' in navigator && !isPhoneTestHost() && !Capacitor.isNativePlatform()) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('/sw.js').catch(() => {
       // Offline image cache is optional.

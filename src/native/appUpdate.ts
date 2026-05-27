@@ -13,15 +13,12 @@ type AppUpdatePlugin = {
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
 
-let cachedInstalledBuild = 0;
-
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   try {
-    const origin =
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : 'https://ballpwal.org';
-    const response = await fetch(`${origin}/app-version.json`, { cache: 'no-store' });
+    const url = Capacitor.isNativePlatform()
+      ? 'https://ballpwal.org/app-version.json'
+      : `${typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://ballpwal.org'}/app-version.json`;
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       return null;
     }
@@ -36,27 +33,14 @@ export async function getInstalledVersionCode(): Promise<number> {
     return 0;
   }
 
-  if (cachedInstalledBuild > 0) {
-    return cachedInstalledBuild;
-  }
-
   try {
     const { App } = await import('@capacitor/app');
     const info = await App.getInfo();
-    const build = Number(info.build);
-    if (Number.isFinite(build) && build > 0) {
-      cachedInstalledBuild = build;
-      return build;
-    }
-    return cachedInstalledBuild;
+    const build = Number.parseInt(String(info.build), 10);
+    return Number.isFinite(build) && build > 0 ? build : 0;
   } catch {
-    return cachedInstalledBuild;
+    return 0;
   }
-}
-
-/** Install ပြီးပြီး app ပြန်ဖွင့်တဲ့အခါ build နံပါတ် ပြန် ဖတ်ရန် */
-export function clearInstalledVersionCache() {
-  cachedInstalledBuild = 0;
 }
 
 export async function installAppUpdate(apkUrl: string) {

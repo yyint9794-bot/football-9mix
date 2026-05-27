@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import App from './App';
 import { AdminWebPage } from './AdminWebPage';
@@ -16,13 +16,18 @@ export function RootApp() {
   const adsEnabled = isAdsAllowedPath(path) && !nativeApp;
   const showMobileShell = nativeApp || isMobileAppPath(path);
 
+  const nativeRedirectedRef = useRef(false);
+
   useEffect(() => {
-    if (!nativeApp) {
+    if (!nativeApp || nativeRedirectedRef.current) {
       return;
     }
 
     if (!isMobileAppPath(path)) {
-      window.location.replace(mobileTabToPath('home'));
+      nativeRedirectedRef.current = true;
+      const target = mobileTabToPath('home');
+      window.history.replaceState(null, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   }, [nativeApp, path]);
 
