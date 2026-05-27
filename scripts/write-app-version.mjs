@@ -44,7 +44,7 @@ writeFileSync(
   `/** Auto-generated — APK ထဲတွင် ဗားရှင်း အနည်းဆုံး (build.gradle) */
 export const PUBLISHED_VERSION_CODE = ${versionCode};
 export const PUBLISHED_VERSION_NAME = '${versionName}';
-export const PUBLISHED_APK_URL = '${jsDelivrApk}';
+export const PUBLISHED_APK_URL = '${rawApk}';
 export const PUBLISHED_APK_URL_SITE = '${siteApk}';
 export const PUBLISHED_RELEASE_NOTES = ${JSON.stringify(payload.releaseNotes)};
 `,
