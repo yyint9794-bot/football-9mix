@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { PaymentTransferScene } from './PaymentTransferScene';
 import {
   fetchMyTransactions,
   fetchPaymentConfig,
@@ -161,31 +162,41 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
         ) : null}
 
         {step === 'details' && method && mode === 'deposit' ? (
-          <section className="payment-step payment-step-fill">
-            <button type="button" className="payment-back" onClick={goBack}>
-              ← နည်းလမ်း ပြန်ရွေးမည်
-            </button>
-            <div className="payment-admin-card">
-              <img src={METHOD_META[method].logo} alt="" className="payment-admin-logo" />
-              <div>
-                <span>Admin {METHOD_META[method].label}</span>
-                <strong>{activeNumber || 'နံပါတ် မသတ်မှတ်ရသေးပါ'}</strong>
-              </div>
-              <button type="button" className="payment-copy-btn" onClick={() => void handleCopyNumber()}>
-                ကူးမည်
+          <section className="payment-step payment-step-with-scene">
+            <div className="payment-step-top">
+              <button type="button" className="payment-back" onClick={goBack}>
+                ← နည်းလမ်း ပြန်ရွေးမည်
               </button>
+              <div className="payment-admin-card">
+                <img src={METHOD_META[method].logo} alt="" className="payment-admin-logo" />
+                <div>
+                  <span>Admin {METHOD_META[method].label}</span>
+                  <strong>{activeNumber || 'နံပါတ် မသတ်မှတ်ရသေးပါ'}</strong>
+                </div>
+                <button type="button" className="payment-copy-btn" onClick={() => void handleCopyNumber()}>
+                  ကူးမည်
+                </button>
+              </div>
+              <p className="payment-hint">
+                အထက်ပါနံပါတ်သို့ ငွေလွဲပြီးပါက အောက်ပါ ခလုတ်နှိပ်ပြီး အချက်အလက် ဖြည့်ပါ
+              </p>
+              <div
+                className="payment-action-row"
+                style={
+                  { '--pay-accent': method === 'kbz' ? '#1d4ed8' : '#7c3aed' } as CSSProperties
+                }
+              >
+                <button type="button" className="payment-transfer-btn" onClick={() => setStep('form')}>
+                  ငွေလွဲမည်
+                </button>
+              </div>
             </div>
-            <p className="payment-hint">
-              အထက်ပါနံပါတ်သို့ ငွေလွဲပြီးပါက အောက်ပါ ခလုတ်နှိပ်ပြီး အချက်အလက် ဖြည့်ပါ
-            </p>
-            <button type="button" className="quality-watch live-watch payment-primary-btn" onClick={() => setStep('form')}>
-              ငွေလွဲမည်
-            </button>
+            <PaymentTransferScene mode="deposit" method={method} />
           </section>
         ) : null}
 
         {step === 'form' && method ? (
-          <form className="payment-form payment-step-fill" onSubmit={handleSubmit}>
+          <form className="payment-form payment-step-with-scene" onSubmit={handleSubmit}>
             <button type="button" className="payment-back" onClick={goBack}>
               ← နောက်သို့
             </button>
@@ -247,9 +258,12 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
               </label>
             ) : null}
 
-            <button type="submit" className="quality-watch live-watch payment-primary-btn" disabled={submitting}>
-              {submitting ? 'ပို့နေပါတယ်…' : mode === 'deposit' ? 'ငွေသွင်း တောင်းဆိုမည်' : 'ငွေထုတ် တောင်းဆိုမည်'}
-            </button>
+            <div className="payment-action-row">
+              <button type="submit" className="payment-transfer-btn payment-submit-btn" disabled={submitting}>
+                {submitting ? 'ပို့နေပါတယ်…' : mode === 'deposit' ? 'ငွေသွင်း တောင်းဆိုမည်' : 'ငွေထုတ် တောင်းဆိုမည်'}
+              </button>
+            </div>
+            <PaymentTransferScene mode={mode} method={method} />
           </form>
         ) : null}
 
