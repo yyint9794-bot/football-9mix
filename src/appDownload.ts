@@ -1,12 +1,12 @@
-/** APK — GitHub main (jsDelivr). Site deploy ဟောင်းဖြစ်ရင်လည်း အသစ် ရမည် */
-export const APP_APK_CDN_URL =
-  'https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/downloads/9mix-football.apk';
-export const APP_APK_BUILD = 'v9';
-export const APP_APK_FILENAME = '9mix-football.apk';
+/** APK v9+ — versioned filename (cache ဟောင်း မရ) */
+export const APP_APK_VERSION = 9;
+export const APP_APK_FILENAME = `9mix-football-v${APP_APK_VERSION}.apk`;
+const GH_APK = `https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/${APP_APK_FILENAME}`;
+export const APP_APK_CDN_URL = GH_APK;
+export const APP_APK_BUILD = `v${APP_APK_VERSION}`;
 
-/** Cache bust — ballpwal.org static APK ဟောင်းမသုံးအောင် CDN ဦးစား */
 export function resolveAppDownloadHref() {
-  return `${APP_APK_CDN_URL}?v=${APP_APK_BUILD}`;
+  return `${GH_APK}?cb=${Date.now()}`;
 }
 
 export function isAndroidDevice() {
@@ -21,38 +21,11 @@ export function shouldDownloadApkFile() {
   return true;
 }
 
-const APK_FETCH_URLS = () => [
-  `${APP_APK_CDN_URL}?v=${APP_APK_BUILD}&cb=${Date.now()}`,
-  `https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football.apk?cb=${Date.now()}`,
-  `/downloads/9mix-football.apk?v=${APP_APK_BUILD}&cb=${Date.now()}`,
-];
-
+/** Chrome/Android — တိုက်ရိုက် ဒေါင်းလုဒ် (blob မသုံး — ဟောင်း cache မရ) */
 export async function triggerApkDownload() {
   if (isIosDevice()) {
     window.location.href = '/app';
     return;
   }
-
-  for (const url of APK_FETCH_URLS()) {
-    try {
-      const response = await fetch(url, { cache: 'no-store', mode: 'cors' });
-      if (!response.ok) continue;
-      const blob = await response.blob();
-      if (blob.size < 1_000_000) continue;
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = APP_APK_FILENAME;
-      anchor.rel = 'noopener';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-      return;
-    } catch {
-      /* try next mirror */
-    }
-  }
-
-  window.location.href = resolveAppDownloadHref();
+  window.location.assign(resolveAppDownloadHref());
 }

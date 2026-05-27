@@ -9,13 +9,16 @@ const gradle = readFileSync(gradlePath, 'utf8');
 const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
 const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0';
 
-const jsDelivrApk = `https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/downloads/9mix-football.apk`;
-const siteApk = `https://ballpwal.org/downloads/9mix-football.apk?v=${versionCode}`;
+const gh = 'yyint9794-bot/football-9mix';
+const apkName = `9mix-football-v${versionCode}.apk`;
+const rawApk = `https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}`;
+const jsDelivrApk = `https://cdn.jsdelivr.net/gh/${gh}/main/public/downloads/${apkName}`;
+const siteApk = `https://ballpwal.org/downloads/${apkName}`;
 
 const payload = {
   versionCode,
   versionName,
-  apkUrl: jsDelivrApk,
+  apkUrl: rawApk,
   apkUrlCdn: jsDelivrApk,
   apkUrlSite: siteApk,
   releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Update စစ်ဆေးမှု ပြင်ဆင်ချက်',

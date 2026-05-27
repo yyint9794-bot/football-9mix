@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const gradle = readFileSync(join(root, 'android', 'app', 'build.gradle'), 'utf8');
+const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
+
 const candidates = [
   join(root, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk'),
   join(root, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release-unsigned.apk'),
@@ -17,8 +21,11 @@ if (!source) {
 }
 
 const outDir = join(root, 'public', 'downloads');
-const target = join(outDir, '9mix-football.apk');
+const latest = join(outDir, '9mix-football.apk');
+const versioned = join(outDir, `9mix-football-v${versionCode}.apk`);
 mkdirSync(outDir, { recursive: true });
-copyFileSync(source, target);
-console.log(`Copied ${source} -> ${target}`);
+copyFileSync(source, latest);
+copyFileSync(source, versioned);
+console.log(`Copied ${source} -> ${latest}`);
+console.log(`Copied ${source} -> ${versioned}`);
 spawnSync(process.execPath, [join(root, 'scripts', 'write-app-version.mjs')], { stdio: 'inherit' });
