@@ -19,3 +19,17 @@ const payload = {
 const outPath = join(root, 'public', 'app-version.json');
 writeFileSync(outPath, JSON.stringify(payload, null, 2), 'utf8');
 console.log(`Wrote ${outPath} — v${versionName} (${versionCode})`);
+
+const appDownloadPath = join(root, 'src', 'appDownload.ts');
+const appDownload = readFileSync(appDownloadPath, 'utf8');
+const nextBuild = `v${versionCode}`;
+const updated = appDownload.replace(
+  /export const APP_APK_BUILD = '[^']*';/,
+  `export const APP_APK_BUILD = '${nextBuild}';`,
+);
+if (updated === appDownload) {
+  console.warn('appDownload.ts: APP_APK_BUILD line not updated');
+} else {
+  writeFileSync(appDownloadPath, updated, 'utf8');
+  console.log(`Updated ${appDownloadPath} — APP_APK_BUILD=${nextBuild}`);
+}

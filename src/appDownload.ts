@@ -1,5 +1,5 @@
 /** APK hosted on site after `npm run android:apk` — bump when rebuilding APK */
-export const APP_APK_BUILD = '20260528-v2';
+export const APP_APK_BUILD = 'v3';
 export const APP_APK_URL = `/downloads/9mix-football.apk?v=${APP_APK_BUILD}`;
 export const APP_APK_FILENAME = '9mix-football.apk';
 

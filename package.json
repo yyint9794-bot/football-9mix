@@ -11,6 +11,7 @@
     "build": "vite build && node scripts/postbuild-mobile.mjs",
     "android:sync": "npm run build && npx cap sync android",
     "android:apk": "npm run android:sync && node scripts/run-gradle.mjs && node scripts/copy-apk.mjs",
+    "release": "npm run android:apk",
     "android:apk:full": "node scripts/run-gradle.mjs && node scripts/copy-apk.mjs",
     "android:open": "npx cap open android",
     "typecheck": "tsc -b",
