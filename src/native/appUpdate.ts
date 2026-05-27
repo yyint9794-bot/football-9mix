@@ -20,6 +20,8 @@ type AppUpdatePlugin = {
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
 
+const FETCH_MS = 4500;
+
 export function isAppUpdatePluginAvailable() {
   return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('AppUpdate');
 }
@@ -30,7 +32,7 @@ async function openApkDownload(url: string) {
     await Browser.open({ url });
     return;
   } catch {
-    // Browser plugin missing — WebView မှ ဒေါင်းလုဒ်
+    // Browser plugin missing
   }
   window.location.href = url;
 }
@@ -46,18 +48,13 @@ function withCacheBust(url: string) {
 }
 
 function versionSources(): string[] {
-  const base = [
-    'https://ballpwal.org/api/app-version',
-    JS_DELIVR,
-    GITHUB_RAW,
-    'https://ballpwal.org/app-version.json',
-  ];
-
-  if (typeof window !== 'undefined' && window.location.origin) {
-    base.push(`${window.location.origin}/app-version.json`);
-    base.push(`${window.location.origin}/api/app-version`);
+  const base = [JS_DELIVR, GITHUB_RAW, 'https://ballpwal.org/app-version.json'];
+  if (!Capacitor.isNativePlatform() && typeof window !== 'undefined' && window.location.origin) {
+    const o = window.location.origin;
+    if (!/localhost|capacitor/i.test(o)) {
+      base.push(`${o}/app-version.json`);
+    }
   }
-
   return [...new Set(base.map(withCacheBust))];
 }
 
@@ -71,39 +68,48 @@ function publishedFallback(): AppVersionInfo {
 }
 
 async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
-  const response = await fetch(url, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-  });
-  if (!response.ok) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), FETCH_MS);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const text = await response.text();
+    if (!text.trim().startsWith('{')) {
+      return null;
+    }
+    const data = JSON.parse(text) as AppVersionInfo;
+    if (!data?.versionCode || data.versionCode < 1) {
+      return null;
+    }
+    return {
+      ...data,
+      apkUrl: data.apkUrlCdn || data.apkUrl || PUBLISHED_APK_URL,
+    };
+  } catch {
     return null;
+  } finally {
+    window.clearTimeout(timer);
   }
-  const data = (await response.json()) as AppVersionInfo;
-  if (!data?.versionCode || data.versionCode < 1) {
-    return null;
-  }
-  return {
-    ...data,
-    apkUrl: data.apkUrlCdn || data.apkUrl || PUBLISHED_APK_URL,
-  };
 }
 
-/** အင်တာနက်မှ နံပါတ်အကြီးဆုံး + APK ထဲ ဗားရှင်း */
-export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
-  let best: AppVersionInfo | null = null;
+/** အင်တာနက်မှ နံပါတ်အကြီးဆုံး + APK ထဲ ဗားရှင်း (ချက်ချင်း fallback) */
+export async function fetchLatestAppVersion(): Promise<AppVersionInfo> {
+  const published = publishedFallback();
+  const results = await Promise.all(versionSources().map((url) => fetchOneVersion(url)));
 
-  for (const url of versionSources()) {
-    try {
-      const data = await fetchOneVersion(url);
-      if (data && (!best || data.versionCode > best.versionCode)) {
-        best = data;
-      }
-    } catch {
-      // try next
+  let best: AppVersionInfo | null = null;
+  for (const data of results) {
+    if (data && (!best || data.versionCode > best.versionCode)) {
+      best = data;
     }
   }
 
-  const published = publishedFallback();
   if (!best || published.versionCode > best.versionCode) {
     return published;
   }
@@ -150,12 +156,7 @@ export async function installAppUpdate(apkUrl: string) {
 
   try {
     await AppUpdateNative.installApk({ url });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (/not implemented/i.test(msg)) {
-      await openApkDownload(url);
-      return;
-    }
+  } catch {
     await openApkDownload(url);
   }
 }

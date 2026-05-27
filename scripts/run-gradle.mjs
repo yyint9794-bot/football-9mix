@@ -12,7 +12,7 @@ if (!existsSync(gradle)) {
   process.exit(1);
 }
 
-const result = spawnSync(gradle, ['assembleDebug'], {
+const result = spawnSync(gradle, ['assembleRelease'], {
   cwd: androidDir,
   stdio: 'inherit',
   shell: isWin,

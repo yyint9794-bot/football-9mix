@@ -16,7 +16,8 @@ type AppUpdateGateProps = {
   children: ReactNode;
 };
 
-const BLOCKED_CACHE_KEY = 'ballpwal-update-blocked-v3';
+const BLOCKED_CACHE_KEY = 'ballpwal-update-blocked-v4';
+const CHECK_TIMEOUT_MS = 7000;
 
 type BlockedCache = {
   latest: AppVersionInfo;
@@ -110,8 +111,22 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
     if (!Capacitor.isNativePlatform()) {
       return;
     }
-    void applyCheck().catch(() => setGate('check-failed'));
+
+    const timeout = window.setTimeout(() => {
+      setGate((current) => (current === 'checking' ? 'check-failed' : current));
+    }, CHECK_TIMEOUT_MS);
+
+    void applyCheck()
+      .catch(() => setGate('check-failed'))
+      .finally(() => window.clearTimeout(timeout));
+
+    return () => window.clearTimeout(timeout);
   }, []);
+
+  const skipToApp = () => {
+    clearBlockedCache();
+    setGate('ready');
+  };
 
   if (!Capacitor.isNativePlatform()) {
     return children;
@@ -155,6 +170,15 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
     return (
       <div className="m-update-block">
         <p className="m-update-block-msg">ဗားရှင်း စစ်ဆေးနေပါတယ်…</p>
+        <p className="m-update-hint">ကြာရင် အောက်ခလုတ် နှိပ်ပါ</p>
+        <div className="m-update-actions">
+          <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={skipToApp}>
+            ယာယီ App သုံးမည်
+          </button>
+          <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={openBrowserDownload}>
+            APK ဒေါင်းလုဒ် (v{PUBLISHED_VERSION_CODE})
+          </button>
+        </div>
       </div>
     );
   }
@@ -172,6 +196,9 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
           </button>
           <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={handleRetry}>
             ပြန် စမ်းမည်
+          </button>
+          <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={skipToApp}>
+            ယာယီ App သုံးမည်
           </button>
         </div>
       </div>

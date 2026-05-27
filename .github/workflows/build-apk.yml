@@ -34,6 +34,11 @@ jobs:
       - run: chmod +x android/gradlew
       - run: npm ci
       - run: npm run android:apk
+      - name: Verify APK size on disk
+        run: |
+          BYTES=$(stat -c%s public/downloads/9mix-football-v10.apk 2>/dev/null || stat -f%z public/downloads/9mix-football-v10.apk)
+          echo "APK bytes: $BYTES"
+          test "$BYTES" -gt 10000000
 
       - name: Commit APK and version files
         run: |

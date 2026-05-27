@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -17,6 +17,15 @@ const candidates = [
 const source = candidates.find((path) => existsSync(path));
 if (!source) {
   console.error('APK not found. Run: npm run android:apk');
+  process.exit(1);
+}
+
+const apkBytes = statSync(source).size;
+const minApk = 10 * 1024 * 1024;
+if (apkBytes < minApk) {
+  console.error(
+    `APK too small (${Math.round(apkBytes / 1024 / 1024)} MB) — need full bundle (>=10 MB). Run: npm run android:sync`,
+  );
   process.exit(1);
 }
 
