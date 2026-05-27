@@ -12,12 +12,18 @@ type AppUpdatePlugin = {
 };
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
-const REMOTE_VERSION_URL = 'https://ballpwal.org/app-version.json';
+
+const VERSION_SOURCES = [
+  'https://ballpwal.org/api/app-version',
+  'https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/app-version.json',
+  'https://ballpwal.org/app-version.json',
+];
 
 function versionUrls(): string[] {
-  const urls = [REMOTE_VERSION_URL];
+  const urls = [...VERSION_SOURCES];
   if (typeof window !== 'undefined' && window.location.origin) {
     urls.push(`${window.location.origin}/app-version.json`);
+    urls.push(`${window.location.origin}/api/app-version`);
   }
   return [...new Set(urls)];
 }
@@ -34,7 +40,7 @@ async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
   return data;
 }
 
-/** Server + APK ထဲက app-version.json — နံပါတ်အကြီးဆုံးကို ယူ */
+/** Server API + GitHub + static — နံပါတ်အကြီးဆုံး */
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   let best: AppVersionInfo | null = null;
 
@@ -45,7 +51,7 @@ export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
         best = data;
       }
     } catch {
-      // try next source
+      // try next
     }
   }
 
@@ -53,15 +59,17 @@ export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
     return best;
   }
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      await new Promise((resolve) => window.setTimeout(resolve, 800 * (attempt + 1)));
-      const data = await fetchOneVersion(REMOTE_VERSION_URL);
-      if (data) {
-        return data;
+  for (const url of VERSION_SOURCES) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await new Promise((resolve) => window.setTimeout(resolve, 600 * (attempt + 1)));
+        const data = await fetchOneVersion(url);
+        if (data) {
+          return data;
+        }
+      } catch {
+        // retry
       }
-    } catch {
-      // retry
     }
   }
 
