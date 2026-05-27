@@ -17,7 +17,7 @@ export async function onRequest(context) {
   }
 
   try {
-    useKvWalletStorage(context.env.WALLET_KV);
+    useKvWalletStorage(context.env.WALLET_KV, context.env);
     return await handleWalletRequest(context.request);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Wallet server error';

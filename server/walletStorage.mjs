@@ -4,6 +4,7 @@ const DB_KEY = 'wallet-db';
 
 let readDbFn = null;
 let writeDbFn = null;
+let runtimeEnv = {};
 
 function newId(prefix) {
   return `${prefix}_${crypto.randomBytes(8).toString('hex')}`;
@@ -14,9 +15,17 @@ function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   return `${salt}:${hash}`;
 }
 
+function envValue(key, fallback) {
+  const value = runtimeEnv[key];
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  return String(value);
+}
+
 function buildSeedDb() {
-  const adminUser = process.env.WALLET_ADMIN_USER || 'admin';
-  const adminPass = process.env.WALLET_ADMIN_PASS || 'admin123';
+  const adminUser = envValue('WALLET_ADMIN_USER', 'admin');
+  const adminPass = envValue('WALLET_ADMIN_PASS', 'admin123');
   return {
     users: [
       {
@@ -57,7 +66,9 @@ function createFileAdapter() {
     async read() {
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
-      const dbPath = process.env.WALLET_DB_PATH || path.join(process.cwd(), 'data', 'wallet-db.json');
+      const dbPath =
+        envValue('WALLET_DB_PATH', '') ||
+        path.join(typeof process !== 'undefined' ? process.cwd() : '.', 'data', 'wallet-db.json');
 
       try {
         await fs.access(dbPath);
@@ -73,7 +84,9 @@ function createFileAdapter() {
     async write(db) {
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
-      const dbPath = process.env.WALLET_DB_PATH || path.join(process.cwd(), 'data', 'wallet-db.json');
+      const dbPath =
+        envValue('WALLET_DB_PATH', '') ||
+        path.join(typeof process !== 'undefined' ? process.cwd() : '.', 'data', 'wallet-db.json');
       await fs.mkdir(path.dirname(dbPath), { recursive: true });
       await fs.writeFile(dbPath, JSON.stringify(db, null, 2), 'utf8');
     },
@@ -82,16 +95,18 @@ function createFileAdapter() {
 
 /** Local dev and Node API handlers (file-backed JSON). */
 export function useFileWalletStorage() {
+  runtimeEnv = typeof process !== 'undefined' && process.env ? process.env : {};
   const adapter = createFileAdapter();
   readDbFn = adapter.read;
   writeDbFn = adapter.write;
 }
 
 /** Cloudflare Pages / Workers (KV-backed JSON). */
-export function useKvWalletStorage(kv) {
+export function useKvWalletStorage(kv, env = {}) {
   if (!kv) {
     throw new Error('WALLET_KV binding is missing');
   }
+  runtimeEnv = env;
   const adapter = createKvAdapter(kv);
   readDbFn = adapter.read;
   writeDbFn = adapter.write;
