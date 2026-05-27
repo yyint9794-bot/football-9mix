@@ -1,7 +1,7 @@
 /** APK — GitHub main (jsDelivr). Site deploy ဟောင်းဖြစ်ရင်လည်း အသစ် ရမည် */
 export const APP_APK_CDN_URL =
   'https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/downloads/9mix-football.apk';
-export const APP_APK_BUILD = 'v7';
+export const APP_APK_BUILD = 'v8';
 export const APP_APK_FILENAME = '9mix-football.apk';
 
 /** Cache bust — ballpwal.org static APK ဟောင်းမသုံးအောင် CDN ဦးစား */

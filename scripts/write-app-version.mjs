@@ -55,6 +55,9 @@ const nextBuild = `v${versionCode}`;
 const updated = appDownload.replace(
   /export const APP_APK_BUILD = '[^']*';/,
   `export const APP_APK_BUILD = '${nextBuild}';`,
+).replace(
+  /export const APP_APK_CDN_URL =\s*\n?\s*'[^']*';/,
+  `export const APP_APK_CDN_URL =\n  '${jsDelivrApk}';`,
 );
 if (updated === appDownload) {
   console.warn('appDownload.ts: APP_APK_BUILD line not updated');
