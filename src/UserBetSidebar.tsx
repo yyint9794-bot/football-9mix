@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import type { WalletUser } from './wallet/types';
 
 const TELEGRAM_URL = import.meta.env.VITE_TELEGRAM_URL ?? 'https://t.me/livefootball902';
@@ -29,13 +30,18 @@ export function UserBetSidebar({
   onChooseLanguage,
   onLogout,
 }: UserBetSidebarProps) {
-  if (!open) {
+  if (!open || typeof document === 'undefined') {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="bet-sidebar-layer" role="presentation" onClick={onClose}>
-      <aside className="bet-sidebar" onClick={(event) => event.stopPropagation()}>
+      <aside
+        className="bet-sidebar"
+        role="dialog"
+        aria-label="Menu"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="bet-sidebar-head">
           <div className="bet-sidebar-profile">
             <span className="bet-sidebar-avatar" aria-hidden>
@@ -46,6 +52,9 @@ export function UserBetSidebar({
               <small>Username: {user.username}</small>
             </div>
           </div>
+          <button type="button" className="bet-sidebar-edit" aria-label="ပရိုဖိုင်">
+            ✎
+          </button>
         </header>
 
         <nav className="bet-sidebar-nav">
@@ -89,6 +98,7 @@ export function UserBetSidebar({
           </button>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
