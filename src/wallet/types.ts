@@ -33,6 +33,8 @@ export type WalletBet = {
   settledAt: string | null;
 };
 
+export type PaymentMethod = 'kbz' | 'wave';
+
 export type WalletTransaction = {
   id: string;
   userId: string;
@@ -41,6 +43,10 @@ export type WalletTransaction = {
   amount: number;
   status: 'pending' | 'completed' | 'rejected';
   note: string;
+  paymentMethod?: PaymentMethod | string;
+  contactPhone?: string;
+  contactName?: string;
+  txnRef?: string;
   createdBy: string;
   createdAt: string;
   reviewedAt: string | null;

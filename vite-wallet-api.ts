@@ -79,6 +79,12 @@ async function handleWalletApi(req: IncomingMessage, res: ServerResponse) {
       return;
     }
 
+    if (segments[0] === 'payment-config' && req.method === 'GET') {
+      const result = await wallet.walletPaymentConfig();
+      sendJson(res, 200, result);
+      return;
+    }
+
     if (segments[0] === 'transactions' && req.method === 'GET') {
       const result = await wallet.userListTransactions(token);
       sendJson(res, result.error ? 401 : 200, result);
@@ -86,12 +92,7 @@ async function handleWalletApi(req: IncomingMessage, res: ServerResponse) {
     }
 
     if (segments[0] === 'request' && req.method === 'POST') {
-      const result = await wallet.userRequestTransaction(
-        token,
-        body.type === 'withdraw' ? 'withdraw' : 'deposit',
-        body.amount,
-        body.note,
-      );
+      const result = await wallet.userRequestTransaction(token, body);
       sendJson(res, result.error ? 400 : 200, result);
       return;
     }

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { normalizeDb, parseMultiplier, settleUserBets } from './betSettlement.mjs';
-import { readDb, writeDb } from './walletStorage.mjs';
+import { getEnv, readDb, writeDb } from './walletStorage.mjs';
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');
@@ -56,10 +56,21 @@ function publicTransaction(tx) {
     amount: tx.amount,
     status: tx.status,
     note: tx.note || '',
+    paymentMethod: tx.paymentMethod || '',
+    contactPhone: tx.contactPhone || '',
+    contactName: tx.contactName || '',
+    txnRef: tx.txnRef || '',
     createdBy: tx.createdBy,
     createdAt: tx.createdAt,
     reviewedAt: tx.reviewedAt || null,
     reviewedBy: tx.reviewedBy || null,
+  };
+}
+
+export async function walletPaymentConfig() {
+  return {
+    kbz: { number: getEnv('WALLET_KPAY_NUMBER', '09674646102'), label: 'KBZ Pay' },
+    wave: { number: getEnv('WALLET_WAVE_NUMBER', '09674646102'), label: 'Wave Pay' },
   };
 }
 
@@ -498,32 +509,65 @@ export async function walletSettleBets(token, matchResults = []) {
   };
 }
 
-export async function userRequestTransaction(token, type, amount, note = '') {
+function formatPaymentNote(payload) {
+  const methodLabel = payload.method === 'wave' ? 'Wave Pay' : 'KBZ Pay';
+  const lines = [
+    methodLabel,
+    `ဖုန်း: ${payload.phone}`,
+    `နာမည်: ${payload.name}`,
+  ];
+  if (payload.txnRef) {
+    lines.push(`လုပ်ငန်းစဉ်: ${payload.txnRef}`);
+  }
+  return lines.join(' | ');
+}
+
+export async function userRequestTransaction(token, payload = {}) {
   const user = await getUserFromToken(token);
   if (!user) {
     return { error: 'Session မရှိပါ' };
   }
 
-  const actor = user;
-  const parsedAmount = Number(amount);
+  const type = payload.type === 'withdraw' ? 'withdraw' : 'deposit';
+  const method = payload.method === 'wave' ? 'wave' : payload.method === 'kbz' ? 'kbz' : '';
+  const parsedAmount = Number(payload.amount);
+  const phone = String(payload.phone || '').trim();
+  const contactName = String(payload.name || '').trim();
+  const txnRef = String(payload.txnRef || '').trim();
+
   if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
     return { error: 'ငွေပမာဏ ထည့်ပါ' };
   }
+  if (!phone || !contactName) {
+    return { error: 'ဖုန်းနံပါတ်နှင့် နာမည် ထည့်ပါ' };
+  }
+  if (type === 'deposit' && (!txnRef || txnRef.length !== 6)) {
+    return { error: 'လုပ်ငန်းစဉ် နောက်ဆုံး ၆ လုံး ထည့်ပါ' };
+  }
+  if (!method) {
+    return { error: 'ငွေပေးချေနည်း ရွေးပါ' };
+  }
 
-  if (type === 'withdraw' && actor.balance < parsedAmount) {
+  if (type === 'withdraw' && user.balance < parsedAmount) {
     return { error: 'လက်ကျန်ငွေ မလုံလောက်ပါ' };
   }
 
   const db = await readDb();
   const tx = {
     id: newId('tx'),
-    userId: actor.id,
-    username: actor.username,
-    type: type === 'withdraw' ? 'withdraw' : 'deposit',
+    userId: user.id,
+    username: user.username,
+    type,
     amount: parsedAmount,
     status: 'pending',
-    note: String(note || '').trim() || (type === 'withdraw' ? 'ငွေထုတ်တောင်းဆို' : 'ငွေသွင်းတောင်းဆို'),
-    createdBy: actor.username,
+    paymentMethod: method,
+    contactPhone: phone,
+    contactName,
+    txnRef: type === 'deposit' ? txnRef : '',
+    note:
+      String(payload.note || '').trim() ||
+      formatPaymentNote({ method, phone, name: contactName, txnRef }),
+    createdBy: user.username,
     createdAt: new Date().toISOString(),
     reviewedAt: null,
     reviewedBy: null,

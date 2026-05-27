@@ -1,4 +1,20 @@
-import type { WalletBet, WalletBetPick, WalletTransaction, WalletUser } from './types';
+import type {
+  PaymentMethod,
+  WalletBet,
+  WalletBetPick,
+  WalletTransaction,
+  WalletUser,
+} from './types';
+
+export type { PaymentMethod };
+
+export type PaymentConfig = {
+  kbz: { number: string; label: string };
+  wave: { number: string; label: string };
+};
+
+const KPAY_FALLBACK = import.meta.env.VITE_WALLET_KPAY_NUMBER ?? '09674646102';
+const WAVE_FALLBACK = import.meta.env.VITE_WALLET_WAVE_NUMBER ?? '09674646102';
 
 const TOKEN_KEY = 'mix9-auth-token';
 const SAVED_USER_KEY = 'mix9-saved-username';
@@ -152,6 +168,32 @@ export async function fetchMyTransactions() {
   return walletFetch<{ transactions: WalletTransaction[] }>('transactions');
 }
 
+export async function fetchPaymentConfig() {
+  try {
+    return await walletFetch<PaymentConfig>('payment-config');
+  } catch {
+    return {
+      kbz: { number: KPAY_FALLBACK, label: 'KBZ Pay' },
+      wave: { number: WAVE_FALLBACK, label: 'Wave Pay' },
+    };
+  }
+}
+
+export async function requestPayment(payload: {
+  type: 'deposit' | 'withdraw';
+  method: PaymentMethod;
+  amount: number;
+  phone: string;
+  name: string;
+  txnRef?: string;
+}) {
+  return walletFetch<{ transaction: WalletTransaction }>('request', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/** @deprecated Use requestPayment */
 export async function requestTransaction(type: 'deposit' | 'withdraw', amount: number, note: string) {
   return walletFetch<{ transaction: WalletTransaction }>('request', {
     method: 'POST',

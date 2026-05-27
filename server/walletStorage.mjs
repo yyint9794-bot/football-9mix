@@ -113,6 +113,14 @@ export function useKvWalletStorage(kv, env = {}) {
   writeDbFn = adapter.write;
 }
 
+export function getEnv(key, fallback = '') {
+  const value = runtimeEnv[key];
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  return String(value);
+}
+
 export async function readDb() {
   if (!readDbFn) {
     useFileWalletStorage();

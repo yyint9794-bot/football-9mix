@@ -23,7 +23,7 @@ import {
   UserLanguageSheet,
   type AppLocale,
 } from './UserLanguageSheet';
-import { UserWalletPanel } from './UserWalletPanel';
+import { UserPaymentPanel } from './UserPaymentPanel';
 import type { Match } from './types';
 import { fetchMyBets, formatMmk, placeBet, settleMyBets } from './wallet/api';
 import { buildMatchResults } from './wallet/betSync';
@@ -495,11 +495,11 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   );
 
   if (screen === 'deposit') {
-    return renderSubPage('ငွေသွင်း', <UserWalletPanel mode="deposit" />);
+    return renderSubPage('ငွေသွင်း', <UserPaymentPanel mode="deposit" />);
   }
 
   if (screen === 'withdraw') {
-    return renderSubPage('ငွေထုတ်', <UserWalletPanel mode="withdraw" />);
+    return renderSubPage('ငွေထုတ်', <UserPaymentPanel mode="withdraw" />);
   }
 
   if (screen === 'open-bets') {

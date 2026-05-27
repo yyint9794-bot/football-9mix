@@ -68,18 +68,18 @@ export async function handleWalletRequest(request) {
       return jsonResponse(result.error ? 400 : 200, result);
     }
 
+    if (segments[0] === 'payment-config' && request.method === 'GET') {
+      const result = await wallet.walletPaymentConfig();
+      return jsonResponse(200, result);
+    }
+
     if (segments[0] === 'transactions' && request.method === 'GET') {
       const result = await wallet.userListTransactions(token);
       return jsonResponse(result.error ? 401 : 200, result);
     }
 
     if (segments[0] === 'request' && request.method === 'POST') {
-      const result = await wallet.userRequestTransaction(
-        token,
-        body.type === 'withdraw' ? 'withdraw' : 'deposit',
-        body.amount,
-        body.note,
-      );
+      const result = await wallet.userRequestTransaction(token, body);
       return jsonResponse(result.error ? 400 : 200, result);
     }
 

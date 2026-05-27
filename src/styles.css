@@ -2897,22 +2897,31 @@ a {
 }
 
 .betting-hub-main {
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  padding: 0 14px max(12px, env(safe-area-inset-bottom));
+  padding: 0 14px 0;
+  min-height: 0;
+}
+
+.betting-hub-main .betting-menu-grid {
+  flex: 0 0 auto;
 }
 
 .betting-hub-deco {
+  flex: 1;
   width: 100%;
-  height: clamp(140px, 34vw, 190px);
-  margin-top: 10px;
+  min-height: clamp(100px, 22vh, 180px);
+  margin-top: 8px;
+  margin-bottom: max(8px, env(safe-area-inset-bottom));
   background-image:
-    linear-gradient(180deg, transparent 0%, rgba(7, 17, 31, 0.35) 100%),
+    linear-gradient(180deg, rgba(7, 17, 31, 0.15) 0%, rgba(7, 17, 31, 0.55) 100%),
     url('/images/hub-bg.png');
   background-repeat: no-repeat;
   background-position: center bottom;
   background-size: cover;
-  border-radius: 0 0 14px 14px;
+  border-radius: 14px 14px 0 0;
 }
 
 .betting-balance-card {
@@ -3426,6 +3435,15 @@ a {
   min-height: 100dvh;
   width: 100%;
   background: #07111f;
+  display: flex;
+  flex-direction: column;
+}
+
+.betting-app-page .betting-app-shell.hub {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 .betting-app-page:has(.bet-odds-screen) {
@@ -3444,8 +3462,132 @@ a {
 }
 
 .betting-app-shell.hub-sub {
-  grid-template-rows: auto 1fr;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  grid-template-rows: none;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #f4f7fb;
+}
+
+.betting-app-shell.hub-sub .wallet-panel,
+.betting-app-shell.hub-sub .payment-panel {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.payment-step h3 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.payment-method-card {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 14px 10px;
+  border: 2px solid #e8eef5;
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.payment-method-card:active {
+  transform: scale(0.98);
+  border-color: #0fa86b;
+}
+
+.payment-method-card img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.payment-method-card b {
+  color: #0f172a;
+  font-size: 0.88rem;
+}
+
+.payment-back {
+  margin-bottom: 10px;
+  border: 0;
+  background: transparent;
+  color: #0fa86b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-admin-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0c1f3f, #1e3a5f);
+  color: #fff;
+}
+
+.payment-admin-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.payment-admin-card span {
+  display: block;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.payment-admin-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+}
+
+.payment-copy-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #22c55e;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.payment-hint {
+  margin: 12px 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.payment-form {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-selected {
+  margin: 0 0 4px;
+  color: #0fa86b;
+  font-weight: 800;
+  font-size: 0.88rem;
 }
 
 .bet-sidebar-layer {
