@@ -12,6 +12,7 @@ type MobileMatchCardProps = {
   kickoffLabel?: string;
   showWatch?: boolean;
   forceWatch?: boolean;
+  showBetUnderTeams?: boolean;
 };
 
 export function MobileMatchCard({
@@ -22,6 +23,7 @@ export function MobileMatchCard({
   kickoffLabel,
   showWatch = true,
   forceWatch = false,
+  showBetUnderTeams = false,
 }: MobileMatchCardProps) {
   const live = isLiveMatch(match);
   const score = formatMatchScore(match);
@@ -65,6 +67,12 @@ export function MobileMatchCard({
           <strong>{match.awayTeam.name}</strong>
         </div>
       </div>
+
+      {showBetUnderTeams && onBet ? (
+        <button type="button" className="m-bet-under-teams" onClick={onBet}>
+          လောင်းမည်
+        </button>
+      ) : null}
 
       {showWatch || forceWatch ? (
         <div className="m-match-actions">

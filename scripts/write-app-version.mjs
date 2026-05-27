@@ -24,12 +24,13 @@ const payload = {
   apkUrlSite: apkUrl,
   apkUrlCdn: apkUrl,
   forceUpdate: true,
-  releaseNotes: `Live Chat ချက်ချင်း မြင်ရမည် — v${versionCode} အရေးကြီး update`,
+  releaseNotes: `ပင်မ ပြင်ဆင်ချက် + Live Chat — v${versionCode}`,
   releaseFeatures: [
-    'Live Chat — ဖုန်း ၂ လုံးမှာ ချက်ချင်း မြင်ရမည်',
-    'Update မလုပ်ရသေးရင် App မဖွင့်ရ',
-    'မောင်း/ဘော်ဒီ UI ပြင်ဆင်ချက်',
-    'Live ကြည့်ရှု + Chat တစ်နေရာတည်း',
+    'ပင်မ — ပြီးသွားပွဲ မပြတော့၊ လာမည့်ပွဲ ဦးစား',
+    'Premier League / Champions League / World Cup — လောင်းမည် ခလုတ်',
+    'ပွဲရလဒ် — မြန်ဆန်စွာ ရလဒ်ကြည့်ရှု',
+    'Web Hero — ဘောလုံးကန် Live Animation',
+    'Live Chat ချက်ချင်း မြင်ရမည်',
   ],
 };
 

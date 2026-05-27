@@ -953,47 +953,108 @@ function resultDisplayKey(match: Match) {
   return `${match.homeTeam.name}|${match.awayTeam.name}|${getMatchTimeBucket(match.time)}`;
 }
 
-export async function fetchMatchResults(signal?: AbortSignal): Promise<Match[]> {
-  const paths = [...MMK_RESULTS_ENDPOINTS, '/mmk-autokyay/livedata'];
-  const resultResponses = await Promise.allSettled(paths.map((path) => fetchMmkMatches(path, signal)));
+const RESULTS_CACHE_KEY = 'ballpwal-match-results-v1';
+const RESULTS_CACHE_MS = 2 * 60 * 1000;
 
-  const byKey = new Map<string, Match>();
-  for (const result of resultResponses) {
-    if (result.status !== 'fulfilled') {
+function readResultsCache(): Match[] | null {
+  try {
+    const raw = sessionStorage.getItem(RESULTS_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { at: number; matches: Match[] };
+    if (!parsed?.matches?.length || Date.now() - parsed.at > RESULTS_CACHE_MS) {
+      return null;
+    }
+    return parsed.matches;
+  } catch {
+    return null;
+  }
+}
+
+function writeResultsCache(matches: Match[]) {
+  try {
+    sessionStorage.setItem(
+      RESULTS_CACHE_KEY,
+      JSON.stringify({ at: Date.now(), matches: matches.slice(0, 120) }),
+    );
+  } catch {
+    // ignore quota
+  }
+}
+
+function mergeResultMatches(byKey: Map<string, Match>, batch: Match[]) {
+  for (const match of batch) {
+    if (!hasMatchScore(match)) {
       continue;
     }
 
-    for (const match of result.value) {
-      if (!hasMatchScore(match)) {
-        continue;
-      }
+    const key = getMatchKey(match);
+    const existing = byKey.get(key);
+    const next = {
+      ...match,
+      status: 'completed',
+      completed: true,
+      is_finished: true,
+      resultFromApi: true,
+    };
 
-      const key = getMatchKey(match);
-      const existing = byKey.get(key);
-      const next = {
-        ...match,
-        status: 'completed',
-        completed: true,
-        is_finished: true,
-        resultFromApi: true,
-      };
-
-      if (!existing) {
-        byKey.set(key, next);
-        continue;
-      }
-
-      byKey.set(key, applyScoresToMatch(existing, next));
+    if (!existing) {
+      byKey.set(key, next);
+      continue;
     }
-  }
 
+    byKey.set(key, applyScoresToMatch(existing, next));
+  }
+}
+
+function finalizeResultMatches(byKey: Map<string, Match>) {
   return Array.from(byKey.values())
-    .filter((match) => isWithinResultsWindow(match.time))
+    .filter((match) => isWithinResultsWindow(match.time, 21))
     .sort((a, b) => {
       const timeA = parseKickoffTime(a.time)?.getTime() ?? 0;
       const timeB = parseKickoffTime(b.time)?.getTime() ?? 0;
       return timeB - timeA;
-    });
+    })
+    .slice(0, 80);
+}
+
+/** ပွဲရလဒ် — cache + endpoint တစ်ခု ဦးစား (မြန်ရန်) */
+export async function fetchMatchResults(signal?: AbortSignal): Promise<Match[]> {
+  const cached = readResultsCache();
+  if (cached?.length) {
+    return cached;
+  }
+
+  const byKey = new Map<string, Match>();
+
+  try {
+    const fast = await fetchMmkMatches(MMK_RESULTS_ENDPOINTS[0], signal);
+    mergeResultMatches(byKey, fast);
+    const quick = finalizeResultMatches(byKey);
+    if (quick.length >= 6) {
+      writeResultsCache(quick);
+      return quick;
+    }
+  } catch {
+    // fall through
+  }
+
+  const resultResponses = await Promise.allSettled(
+    MMK_RESULTS_ENDPOINTS.slice(1).map((path) => fetchMmkMatches(path, signal)),
+  );
+
+  for (const result of resultResponses) {
+    if (result.status === 'fulfilled') {
+      mergeResultMatches(byKey, result.value);
+    }
+  }
+
+  const list = finalizeResultMatches(byKey);
+  if (list.length) {
+    writeResultsCache(list);
+  }
+  return list;
 }
 
 export type StreamQuality = 'fullhd' | 'hd' | 'sd';

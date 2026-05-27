@@ -24,7 +24,10 @@ import { formatMatchScore, hasMatchScore, isMatchFinished } from './matchScore';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { preloadMatchLogos } from './teamLogoIndex';
 import { AdBanner, AD_SLOTS, VIDEO_AD_URL, resolveAdSlot } from './ads';
+import { HeroKickAnimation } from './HeroKickAnimation';
 import { SiteAnnouncementBar } from './SiteAnnouncementBar';
+import { compareFeaturedMatches } from './matchUi';
+import { getLeaguePriority, isMajorLeagueMatch } from './matchLeagues';
 import { LeagueLogo, TeamLogo } from './TeamLogo';
 import type { Match } from './types';
 
@@ -34,21 +37,6 @@ import type { OddsSection } from './betting/types';
 
 const ALL_LEAGUES = 'လိဂ်အားလုံး';
 const TELEGRAM_URL = import.meta.env.VITE_TELEGRAM_URL ?? 'https://t.me/livefootball902';
-const priorityLeagues = [
-  ['world cup', 'fifa world cup', 'fifa wc', 'wc'],
-  ['champions league', 'uefa champions league', 'uefa cl', 'ucl'],
-  ['premier league', 'english premier league', 'eng pr', 'epl'],
-];
-
-function getLeaguePriority(name: string) {
-  const normalizedName = name.toLowerCase();
-  const index = priorityLeagues.findIndex((aliases) =>
-    aliases.some((alias) => normalizedName.includes(alias)),
-  );
-
-  return index === -1 ? priorityLeagues.length : index;
-}
-
 function getInitials(name: string) {
   return name
     .split(/\s+/)
@@ -199,14 +187,6 @@ function isLiveMatch(match: Match) {
   );
 }
 
-function compareFeaturedMatches(a: Match, b: Match) {
-  const liveDiff = Number(isLiveMatch(b)) - Number(isLiveMatch(a));
-  const streamDiff = Number(hasStream(b)) - Number(hasStream(a));
-  const oddsDiff = Number(extractMyanmarOdds(b).length > 0) - Number(extractMyanmarOdds(a).length > 0);
-
-  return liveDiff || streamDiff || oddsDiff || String(a.time).localeCompare(String(b.time));
-}
-
 function App() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,14 +299,25 @@ function App() {
         (activeFilter === 'ပွဲပြီး' && isMatchFinished(match) && hasMatchScore(match));
       const matchesLeague = showOddsOnly || activeLeague === ALL_LEAGUES || match.league.name === activeLeague;
       const matchesOdds = !showOddsOnly || extractMyanmarOdds(match).length > 0;
-      const matchesDate = activeFilter === 'ပွဲပြီး' || isCurrentOrFutureMatch(match);
+      const matchesDate =
+        activeFilter === 'ပွဲပြီး'
+          ? true
+          : isCurrentOrFutureMatch(match) && !isMatchFinished(match);
 
       return matchesQuery && matchesFilter && matchesLeague && matchesOdds && matchesDate;
     });
   }, [activeFilter, activeLeague, matches, query, showOddsOnly]);
 
   const visibleMatches = useMemo(() => [...filteredMatches].sort(compareFeaturedMatches), [filteredMatches]);
-  const featuredMatch = visibleMatches.find((match) => isLiveMatch(match) && hasStream(match)) ?? visibleMatches[0];
+  const featuredMatch = useMemo(() => {
+    if (activeFilter === 'ပွဲပြီး') {
+      return visibleMatches[0];
+    }
+    const pool = visibleMatches.filter((match) => !isMatchFinished(match));
+    const major = pool.filter(isMajorLeagueMatch);
+    const ranked = major.length ? major : pool;
+    return ranked.find((match) => isLiveMatch(match) && hasStream(match)) ?? ranked[0];
+  }, [activeFilter, visibleMatches]);
   const sortedDateEntries = useMemo(() => {
     const grouped = groupMatchesByDate(visibleMatches);
     const dated =
@@ -368,6 +359,7 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero" id="home">
+        <HeroKickAnimation />
         <nav className="topbar">
           <div className="brand">
             <div className="menu-wrap">
@@ -464,7 +456,7 @@ function App() {
                 ပွဲများကြည့်ရန်
               </a>
               <span className="status-pill">
-                {loading ? 'ပွဲစဉ်များ ယူနေသည်...' : `${matches.length} ပွဲ ပြသထားသည်`}
+                {loading ? 'ပွဲစဉ်များ ယူနေသည်...' : `${visibleMatches.length} ပွဲ ပြသထားသည်`}
               </span>
             </div>
           </div>
@@ -753,6 +745,11 @@ function FeaturedMatch({
         )}
         <TeamBlock teamName={match.awayTeam.name} logo={match.awayTeam.logo} engName={String(match.awayEngName || '')} />
       </div>
+      {isMajorLeagueMatch(match) ? (
+        <button type="button" className="featured-bet-under-teams" onClick={onOpenAccount}>
+          လောင်းမည်
+        </button>
+      ) : null}
       <div className="match-meta">
         <strong>{match.time}</strong>
         <span className={isMatchFinished(match) ? 'soon-badge' : streamAvailable ? 'live-badge' : 'soon-badge'}>

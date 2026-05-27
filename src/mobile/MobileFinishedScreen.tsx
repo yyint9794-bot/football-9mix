@@ -22,8 +22,8 @@ export function MobileFinishedScreen() {
 
   return (
     <div className="m-screen m-finished-screen">
-      <p className="m-screen-lead">ပြီးခဲ့သော ပွဲများ — ရလဒ်</p>
-      {loading ? <p className="m-hint">ဖတ်နေပါတယ်…</p> : null}
+      <p className="m-screen-lead">ပွဲရလဒ်</p>
+      {loading ? <p className="m-hint">ပွဲရလဒ် ဖတ်နေပါတယ်…</p> : null}
       <div className="m-section-list">
         {finished.map((match) => {
           const score = formatMatchScore(match) ?? '—';
@@ -31,7 +31,7 @@ export function MobileFinishedScreen() {
             <article className="m-match-card finished" key={match.id}>
               <div className="m-match-top">
                 <span className="m-match-league">{match.league.name}</span>
-                <span className="m-finished-pill">ပြီး</span>
+                <span className="m-finished-pill">ပွဲရလဒ်</span>
               </div>
               <div className="m-match-teams">
                 <div className="m-team">
@@ -50,9 +50,7 @@ export function MobileFinishedScreen() {
             </article>
           );
         })}
-        {!loading && !finished.length ? (
-          <p className="m-hint">ပြီးခဲ့သော ပွဲရလဒ် မရှိသေးပါ</p>
-        ) : null}
+        {!loading && !finished.length ? <p className="m-hint">ပွဲရလဒ် မရှိသေးပါ</p> : null}
       </div>
     </div>
   );

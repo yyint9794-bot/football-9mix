@@ -1,9 +1,9 @@
 /** APK — ballpwal.org/downloads (Cloudflare R2, GitHub မသုံး) */
-export const APP_APK_VERSION = 14;
-export const APP_APK_FILENAME = `9mix-football-v14.apk`;
+export const APP_APK_VERSION = 15;
+export const APP_APK_FILENAME = `9mix-football-v15.apk`;
 const APK_URL = `https://ballpwal.org/downloads/9mix-football-v11.apk`;
 export const APP_APK_CDN_URL = APK_URL;
-export const APP_APK_BUILD = `v14`;
+export const APP_APK_BUILD = `v15`;
 
 export function resolveAppDownloadHref() {
   return `${APK_URL}?cb=${Date.now()}`;

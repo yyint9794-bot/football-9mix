@@ -1,8 +1,11 @@
 import { hasStream } from './api';
 import { extractMyanmarOdds, formatKickoffLabel } from './betting/odds';
 import { parseKickoffTime } from './liveMatch';
+import { compareLeaguePriority } from './matchLeagues';
 import { hasMatchScore, isMatchFinished } from './matchScore';
 import type { Match } from './types';
+
+export { getLeaguePriority, isMajorLeagueMatch, MAJOR_LEAGUE_LABEL } from './matchLeagues';
 
 export { formatKickoffLabel };
 
@@ -126,6 +129,17 @@ export function isUpcomingMatch(match: Match) {
   return start.getTime() > Date.now() - 10 * 60 * 1000;
 }
 
+/** ပင်မ — ပြီးသွားပွဲ မပါ၊ လာမည့် + တိုက်ရိုက် */
+export function isHomeScheduleMatch(match: Match) {
+  if (isCompletedMatch(match) || isMatchFinished(match)) {
+    return false;
+  }
+  if (isLiveMatch(match)) {
+    return true;
+  }
+  return isUpcomingMatch(match);
+}
+
 export function isFinishedResultMatch(match: Match) {
   return isCompletedMatch(match) && hasMatchScore(match);
 }
@@ -144,11 +158,21 @@ export function isCurrentOrFutureMatch(match: Match) {
 }
 
 export function compareFeaturedMatches(a: Match, b: Match) {
+  const leagueDiff = compareLeaguePriority(a, b);
   const liveDiff = Number(isLiveMatch(b)) - Number(isLiveMatch(a));
   const streamDiff = Number(hasStream(b)) - Number(hasStream(a));
   const oddsDiff = Number(extractMyanmarOdds(b).length > 0) - Number(extractMyanmarOdds(a).length > 0);
+  const kickoffA = getMatchKickoffDate(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+  const kickoffB = getMatchKickoffDate(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
 
-  return liveDiff || streamDiff || oddsDiff || String(a.time).localeCompare(String(b.time));
+  return (
+    leagueDiff ||
+    liveDiff ||
+    streamDiff ||
+    oddsDiff ||
+    kickoffA - kickoffB ||
+    String(a.time).localeCompare(String(b.time))
+  );
 }
 
 export function formatMatchDateLabel(dateKey: string) {

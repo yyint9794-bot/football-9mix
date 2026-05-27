@@ -1,27 +1,27 @@
 {
   "parameters": {
     "app_min_version_code": {
-      "defaultValue": { "value": "14" },
+      "defaultValue": { "value": "15" },
       "description": "ဤ build ထက် နိမ့်ရင် update ပြမည်"
     },
     "app_latest_version_code": {
-      "defaultValue": { "value": "14" },
+      "defaultValue": { "value": "15" },
       "description": "နောက်ဆုံး versionCode"
     },
     "app_version_name": {
-      "defaultValue": { "value": "1.4.0" },
-      "description": "ဥပမာ 1.3.9"
+      "defaultValue": { "value": "1.4.1" },
+      "description": "ဥပမာ 1.4.1"
     },
     "app_download_url": {
       "defaultValue": { "value": "https://ballpwal.org/apk.html" },
       "description": "APK ဒေါင်းလုဒ် စာမျက်နှာ"
     },
     "app_release_notes": {
-      "defaultValue": { "value": "Live Chat + Update မလုပ်ရသေးရင် App မဖွင့် — v14" }
+      "defaultValue": { "value": "ပင်မ ပြင်ဆင်ချက် + Live Chat — v15" }
     },
     "app_release_features": {
       "defaultValue": {
-        "value": "Live Chat — ဖုန်း ၂ လုံးမှာ ချက်ချင်း မြင်ရမည်|Update မလုပ်ရသေးရင် App မဖွင့်ရ|မောင်း/ဘော်ဒီ UI ပြင်ဆင်ချက်|Live ကြည့်ရှု + Chat တစ်နေရာတည်း"
+        "value": "ပင်မ — ပြီးသွားပွဲ မပြတော့|Premier League / UCL / World Cup — လောင်းမည်|ပွဲရလဒ် မြန်ဆန်|Hero ဘောလုံးကန် Animation|Live Chat ချက်ချင်း"
       },
       "description": "Feature list — | ခွဲ"
     },

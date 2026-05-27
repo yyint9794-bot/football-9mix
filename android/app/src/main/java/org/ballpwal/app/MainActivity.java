@@ -16,7 +16,7 @@ import org.json.JSONObject;
 public class MainActivity extends BridgeActivity {
 
   /** အောက်ပါ build ထက် နိမ့်ရင် App မဖွင့် — release တိုင်း တိုးပါ */
-  private static final int FALLBACK_MIN_VERSION = 13;
+  private static final int FALLBACK_MIN_VERSION = 14;
   private static final String VERSION_JSON_URL = "https://ballpwal.org/app-version.json";
   private static final String APK_PAGE_URL = "https://ballpwal.org/apk.html";
 

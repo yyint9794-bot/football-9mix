@@ -16,7 +16,7 @@ import './mobile.css';
 const TABS: Array<{ id: MobileTab; label: string; icon: string }> = [
   { id: 'home', label: 'ပင်မ', icon: '⌂' },
   { id: 'live', label: 'တိုက်ရိုက်ကြည့်ရန်', icon: '▶' },
-  { id: 'finished', label: 'ပြီးခဲ့', icon: '✓' },
+  { id: 'finished', label: 'ပွဲရလဒ်', icon: '✓' },
   { id: 'bet', label: '9Mix', icon: '⚽' },
   { id: 'wallet', label: 'ငွေ', icon: '◉' },
 ];

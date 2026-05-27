@@ -4,7 +4,9 @@ import {
   formatMatchDateLabel,
   formatKickoffLabel,
   groupMatchesByDate,
-  isUpcomingMatch,
+  isHomeScheduleMatch,
+  isMajorLeagueMatch,
+  MAJOR_LEAGUE_LABEL,
 } from '../matchUi';
 import type { Match } from '../types';
 import { MobileMatchCard } from './MobileMatchCard';
@@ -31,7 +33,7 @@ export function MobileHomeScreen({
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return matches
-      .filter(isUpcomingMatch)
+      .filter(isHomeScheduleMatch)
       .filter((match) => {
         if (!q) {
           return true;
@@ -44,11 +46,16 @@ export function MobileHomeScreen({
       .sort(compareFeaturedMatches);
   }, [matches, query]);
 
-  const grouped = groupMatchesByDate(visible);
+  const majorMatches = useMemo(() => visible.filter(isMajorLeagueMatch), [visible]);
+  const otherMatches = useMemo(
+    () => visible.filter((match) => !isMajorLeagueMatch(match)),
+    [visible],
+  );
+  const otherGrouped = groupMatchesByDate(otherMatches);
 
   return (
     <div className="m-screen m-home-screen">
-      <p className="m-screen-lead">နောက်လာမည့် ပွဲများ</p>
+      <p className="m-screen-lead">နောက်လာမည့် ပွဲများ — ပြီးသွားပွဲ မပါ</p>
 
       <div className="m-search">
         <input
@@ -66,7 +73,24 @@ export function MobileHomeScreen({
       {error ? <p className="m-error">{error}</p> : null}
 
       <div className="m-section-list">
-        {grouped.map(([dateKey, dateMatches]) => (
+        {majorMatches.length > 0 ? (
+          <section className="m-date-block m-major-leagues">
+            <h3>{MAJOR_LEAGUE_LABEL}</h3>
+            {majorMatches.map((match) => (
+              <MobileMatchCard
+                key={`major-${match.id}`}
+                match={match}
+                kickoffLabel={formatKickoffLabel(match)}
+                onWatch={onWatch}
+                onBet={onBet}
+                showWatch={false}
+                showBetUnderTeams
+              />
+            ))}
+          </section>
+        ) : null}
+
+        {otherGrouped.map(([dateKey, dateMatches]) => (
           <section className="m-date-block" key={dateKey}>
             <h3>{formatMatchDateLabel(dateKey)}</h3>
             {dateMatches.map((match) => (
@@ -81,6 +105,7 @@ export function MobileHomeScreen({
             ))}
           </section>
         ))}
+
         {!loading && !visible.length ? <p className="m-hint">နောက်လာမည့် ပွဲ မရှိသေးပါ</p> : null}
       </div>
     </div>

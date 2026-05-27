@@ -43,8 +43,8 @@ async function ensureRemoteConfig() {
   remoteConfig = getRemoteConfig(firebaseApp);
 
   remoteConfig.defaultConfig = {
-    app_min_version_code: '13',
-    app_latest_version_code: String(Math.max(PUBLISHED_VERSION_CODE, 13)),
+    app_min_version_code: '14',
+    app_latest_version_code: String(Math.max(PUBLISHED_VERSION_CODE, 14)),
     app_version_name: PUBLISHED_VERSION_NAME,
     app_download_url: APP_DOWNLOAD_PAGE,
     app_release_notes: PUBLISHED_RELEASE_NOTES,

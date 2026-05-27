@@ -88,6 +88,165 @@ a {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
   animation: heroSweep 5.5s ease-in-out infinite;
   content: "";
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-kick-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hero-kick-orbit {
+  position: absolute;
+  right: 8%;
+  bottom: 12%;
+  width: min(280px, 42vw);
+  height: min(200px, 32vw);
+  animation: heroKickBob 2.4s ease-in-out infinite;
+}
+
+.hero-kick-ball {
+  position: absolute;
+  left: 0;
+  bottom: 18%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 28%, #fff 0%, #fff 18%, transparent 19%),
+    radial-gradient(circle at 70% 40%, #f8fafc 0%, #e2e8f0 45%, #94a3b8 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+  animation: heroBallKick 2.8s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
+}
+
+.hero-kick-boot {
+  position: absolute;
+  right: 18%;
+  bottom: 8%;
+  width: 54px;
+  height: 28px;
+  border-radius: 10px 18px 8px 8px;
+  background: linear-gradient(135deg, #0f766e, #10a76d);
+  transform: rotate(-18deg);
+  animation: heroBootSwing 2.8s ease-in-out infinite;
+}
+
+.hero-kick-boot::after {
+  position: absolute;
+  right: -6px;
+  top: 6px;
+  width: 22px;
+  height: 10px;
+  border-radius: 4px;
+  background: #052e16;
+  content: "";
+}
+
+.hero-kick-trail {
+  position: absolute;
+  right: 14%;
+  bottom: 28%;
+  width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(16, 167, 109, 0.35), transparent);
+  animation: heroKickTrail 2.8s ease-in-out infinite;
+}
+
+.hero-kick-glow {
+  position: absolute;
+  right: 6%;
+  top: 18%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 167, 109, 0.2), transparent 68%);
+  animation: heroKickPulse 3.2s ease-in-out infinite;
+}
+
+.featured-bet-under-teams {
+  display: block;
+  width: 100%;
+  margin: 10px 0 4px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f766e, #10a76d);
+  color: #ecfdf5;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(16, 167, 109, 0.28);
+}
+
+.featured-bet-under-teams:hover {
+  filter: brightness(1.05);
+}
+
+@keyframes heroKickBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes heroBallKick {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  35% {
+    transform: translate(88px, -52px) scale(0.92);
+  }
+  55% {
+    transform: translate(120px, -18px) scale(1.04);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes heroBootSwing {
+  0%,
+  100% {
+    transform: rotate(-18deg) translateX(0);
+  }
+  40% {
+    transform: rotate(8deg) translateX(12px);
+  }
+  60% {
+    transform: rotate(-6deg) translateX(6px);
+  }
+}
+
+@keyframes heroKickTrail {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scaleX(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scaleX(1.1);
+  }
+}
+
+@keyframes heroKickPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
 }
 
 .topbar,
