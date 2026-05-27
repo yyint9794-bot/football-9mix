@@ -10,3 +10,5 @@ vite.config.js
 # APK build output (upload to public/downloads after `npm run android:apk` or CI artifact)
 public/downloads/*.apk
 !public/downloads/README.md
+.tools/
+android/local.properties
