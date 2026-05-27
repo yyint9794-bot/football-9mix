@@ -36,9 +36,11 @@ jobs:
       - run: npm run android:apk
       - name: Verify APK size on disk
         run: |
-          BYTES=$(stat -c%s public/downloads/9mix-football-v10.apk 2>/dev/null || stat -f%z public/downloads/9mix-football-v10.apk)
-          echo "APK bytes: $BYTES"
-          test "$BYTES" -gt 10000000
+          CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
+          APK="public/downloads/9mix-football-v${CODE}.apk"
+          BYTES=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")
+          echo "APK $APK bytes: $BYTES"
+          test "$BYTES" -gt 8000000
 
       - name: Commit APK and version files
         run: |

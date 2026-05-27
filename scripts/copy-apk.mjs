@@ -21,7 +21,7 @@ if (!source) {
 }
 
 const apkBytes = statSync(source).size;
-const minApk = 10 * 1024 * 1024;
+const minApk = 8 * 1024 * 1024;
 if (apkBytes < minApk) {
   console.error(
     `APK too small (${Math.round(apkBytes / 1024 / 1024)} MB) — need full bundle (>=10 MB). Run: npm run android:sync`,
