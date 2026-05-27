@@ -13,6 +13,8 @@ type AppUpdatePlugin = {
 
 const AppUpdateNative = registerPlugin<AppUpdatePlugin>('AppUpdate');
 
+let cachedInstalledBuild = 0;
+
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   try {
     const origin =
@@ -34,14 +36,27 @@ export async function getInstalledVersionCode(): Promise<number> {
     return 0;
   }
 
+  if (cachedInstalledBuild > 0) {
+    return cachedInstalledBuild;
+  }
+
   try {
     const { App } = await import('@capacitor/app');
     const info = await App.getInfo();
     const build = Number(info.build);
-    return Number.isFinite(build) ? build : 0;
+    if (Number.isFinite(build) && build > 0) {
+      cachedInstalledBuild = build;
+      return build;
+    }
+    return cachedInstalledBuild;
   } catch {
-    return 0;
+    return cachedInstalledBuild;
   }
+}
+
+/** Install ပြီးပြီး app ပြန်ဖွင့်တဲ့အခါ build နံပါတ် ပြန် ဖတ်ရန် */
+export function clearInstalledVersionCache() {
+  cachedInstalledBuild = 0;
 }
 
 export async function installAppUpdate(apkUrl: string) {

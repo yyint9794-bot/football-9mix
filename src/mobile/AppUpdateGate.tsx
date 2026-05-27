@@ -1,7 +1,8 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  clearInstalledVersionCache,
   fetchLatestAppVersion,
   getInstalledVersionCode,
   installAppUpdate,
@@ -14,6 +15,8 @@ type AppUpdateGateProps = {
   children: ReactNode;
 };
 
+const RESUME_CHECK_MS = 8000;
+
 /** Native App — update မလုပ်ရင် အောက်ပါ children မပြပါ */
 export function AppUpdateGate({ children }: AppUpdateGateProps) {
   const [gate, setGate] = useState<GateState>(() =>
@@ -24,55 +27,106 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   const [installedName, setInstalledName] = useState('');
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
+  const resolvedRef = useRef(false);
+  const checkInFlightRef = useRef(false);
+  const lastResumeCheckRef = useRef(0);
 
-  const check = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) {
-      setGate('ready');
+  const applyResult = useCallback((remote: AppVersionInfo | null, localCode: number, versionLabel: string) => {
+    setInstalledCode(localCode);
+    setInstalledName(versionLabel);
+
+    if (!remote?.versionCode) {
+      if (resolvedRef.current) {
+        return;
+      }
+      setGate('check-failed');
       return;
     }
 
-    setGate('checking');
-    setError('');
+    if (localCode > 0 && localCode < remote.versionCode) {
+      setGate('blocked');
+      resolvedRef.current = true;
+      return;
+    }
 
-    try {
-      const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
-      setLatest(remote);
-      setInstalledCode(localCode);
-
-      try {
-        const info = await App.getInfo();
-        setInstalledName(info.version);
-      } catch {
-        setInstalledName('');
-      }
-
-      if (!remote?.versionCode) {
-        setGate('check-failed');
-        return;
-      }
-
-      if (localCode < remote.versionCode) {
-        setGate('blocked');
-        return;
-      }
-
+    if (localCode >= remote.versionCode && localCode > 0) {
       setGate('ready');
-    } catch {
-      setGate('check-failed');
+      resolvedRef.current = true;
+      return;
+    }
+
+    if (localCode === 0 && remote.versionCode > 0) {
+      setGate('blocked');
+      resolvedRef.current = true;
     }
   }, []);
 
-  useEffect(() => {
-    void check();
-    const resume = App.addListener('appStateChange', (state) => {
-      if (state.isActive) {
-        void check();
+  const check = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!Capacitor.isNativePlatform()) {
+        setGate('ready');
+        return;
       }
+
+      if (checkInFlightRef.current) {
+        return;
+      }
+
+      const silent = options?.silent === true && resolvedRef.current;
+      checkInFlightRef.current = true;
+
+      if (!silent) {
+        setError('');
+        if (!resolvedRef.current) {
+          setGate('checking');
+        }
+      }
+
+      try {
+        const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
+        setLatest(remote);
+
+        let versionLabel = '';
+        try {
+          const info = await App.getInfo();
+          versionLabel = info.version;
+        } catch {
+          versionLabel = '';
+        }
+
+        applyResult(remote, localCode, versionLabel);
+      } catch {
+        if (!resolvedRef.current) {
+          setGate('check-failed');
+        }
+      } finally {
+        checkInFlightRef.current = false;
+      }
+    },
+    [applyResult],
+  );
+
+  useEffect(() => {
+    void check({ silent: false });
+
+    const resume = App.addListener('appStateChange', (state) => {
+      if (!state.isActive || updating) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastResumeCheckRef.current < RESUME_CHECK_MS) {
+        return;
+      }
+      lastResumeCheckRef.current = now;
+      clearInstalledVersionCache();
+      void check({ silent: true });
     });
+
     return () => {
       void resume.then((handle) => handle.remove());
     };
-  }, [check]);
+  }, [check, updating]);
 
   if (!Capacitor.isNativePlatform()) {
     return children;
@@ -93,6 +147,11 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
     }
   };
 
+  const handleRetry = () => {
+    resolvedRef.current = false;
+    void check({ silent: false });
+  };
+
   if (gate === 'ready') {
     return children;
   }
@@ -111,7 +170,7 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
         <p className="m-update-block-title">ချိတ်ဆက်မှု မအောင်မြင်ပါ</p>
         <p className="m-update-block-msg">အင်တာနက် စစ်ပြီး ပြန် ကြိုးစားပါ</p>
         {error ? <p className="m-error">{error}</p> : null}
-        <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={() => void check()}>
+        <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={handleRetry}>
           ပြန် စမ်းမည်
         </button>
       </div>
