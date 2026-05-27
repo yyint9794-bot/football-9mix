@@ -6,13 +6,27 @@ function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   return `${salt}:${hash}`;
 }
 
+function hexToBytes(hex) {
+  const normalized = hex.trim();
+  const bytes = new Uint8Array(normalized.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
 function verifyPassword(password, stored) {
   const [salt, hash] = stored.split(':');
   if (!salt || !hash) {
     return false;
   }
   const next = crypto.scryptSync(password, salt, 64).toString('hex');
-  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(next, 'hex'));
+  const left = hexToBytes(hash);
+  const right = hexToBytes(next);
+  if (left.length !== right.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(left, right);
 }
 
 function newId(prefix) {
