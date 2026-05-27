@@ -18,10 +18,19 @@
   </head>
   <body>
     <div id="root">
-      <p style="margin:2rem;font-family:system-ui,sans-serif;color:#8aa0b8;text-align:center">
+      <p id="boot-loading" style="margin:2rem;font-family:system-ui,sans-serif;color:#8aa0b8;text-align:center">
         App ဖွင့်နေပါတယ်…
       </p>
     </div>
+    <script>
+      setTimeout(function () {
+        var el = document.getElementById('boot-loading');
+        if (!el || !el.parentNode) return;
+        el.innerHTML =
+          'App မတက်သေးပါ — Cache ရှင်းပြီး refresh လုပ်ပါ<br><small style="color:#64748b">Chrome → Site settings → Clear data</small>';
+        el.style.color = '#b91c1c';
+      }, 12000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

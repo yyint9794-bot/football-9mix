@@ -27,7 +27,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh().finally(() => setLoading(false));
+    let disposed = false;
+    const timeoutId = window.setTimeout(() => {
+      if (!disposed) {
+        setLoading(false);
+      }
+    }, 12_000);
+
+    void refresh().finally(() => {
+      if (!disposed) {
+        setLoading(false);
+      }
+      window.clearTimeout(timeoutId);
+    });
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [refresh]);
 
   const login = useCallback(async (username: string, password: string) => {

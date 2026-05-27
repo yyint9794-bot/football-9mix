@@ -61,17 +61,15 @@ export function BetWebPage() {
     return (
       <div className="standalone-page">
         <p className="standalone-loading">9Mix လောင်းမှု ဖွင့်နေပါတယ်…</p>
-        {autoTrying ? (
-          <button
-            type="button"
-            className="ghost-button standalone-skip-auto"
-            onClick={() => {
-              setAutoTrying(false);
-            }}
-          >
-            ဝင်ရန် စာမျက်နှာ ဖွင့်မည်
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="ghost-button standalone-skip-auto"
+          onClick={() => {
+            setAutoTrying(false);
+          }}
+        >
+          ဝင်ရန် စာမျက်နှာ ဖွင့်မည်
+        </button>
       </div>
     );
   }

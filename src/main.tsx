@@ -13,22 +13,46 @@ function showBootError(message: string) {
   rootElement.innerHTML = `<p style="margin:2rem 1rem;font-family:system-ui,sans-serif;color:#b91c1c;text-align:center;line-height:1.6">${message}</p>`;
 }
 
+function clearStaleServiceWorkers() {
+  if (!('serviceWorker' in navigator)) {
+    return Promise.resolve();
+  }
+  return navigator.serviceWorker.getRegistrations().then((registrations) =>
+    Promise.all(registrations.map((registration) => registration.unregister())),
+  );
+}
+
 if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-try {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <AuthProvider>
-        <RootApp />
-      </AuthProvider>
-    </React.StrictMode>,
+window.addEventListener('error', (event) => {
+  const detail = event.message || 'JavaScript error';
+  showBootError(
+    `App မဖွင့်နိုင်ပါ — ${detail}<br><br>Chrome: Settings → Site data → Clear → ပြန် refresh`,
   );
-} catch (error) {
-  const detail = error instanceof Error ? error.message : 'အမည်မသိ အမှား';
-  showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ကြည့်ပါ။`);
-}
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  const detail = reason instanceof Error ? reason.message : String(reason);
+  showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ပါ`);
+});
+
+void clearStaleServiceWorkers().finally(() => {
+  try {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        <AuthProvider>
+          <RootApp />
+        </AuthProvider>
+      </React.StrictMode>,
+    );
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'အမည်မသိ အမှား';
+    showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ပါ`);
+  }
+});
 
 function isPhoneTestHost() {
   const host = window.location.hostname;
@@ -42,18 +66,10 @@ function isPhoneTestHost() {
   );
 }
 
-if ('serviceWorker' in navigator) {
-  if (isPhoneTestHost()) {
-    void navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        void registration.unregister();
-      }
+if ('serviceWorker' in navigator && !isPhoneTestHost()) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Offline image cache is optional.
     });
-  } else {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        // The app still works without offline support.
-      });
-    });
-  }
+  });
 }
