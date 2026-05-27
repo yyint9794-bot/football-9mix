@@ -8,6 +8,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 spawnSync(process.execPath, [join(root, 'scripts', 'write-app-version.mjs')], {
   stdio: 'inherit',
 });
+
+const versionJson = join(root, 'public', 'app-version.json');
+if (existsSync(versionJson)) {
+  copyFileSync(versionJson, join(root, 'dist', 'app-version.json'));
+  console.log('Copied app-version.json to dist/');
+}
+
 const apk = join(root, 'public', 'downloads', '9mix-football.apk');
 const distDir = join(root, 'dist', 'downloads');
 

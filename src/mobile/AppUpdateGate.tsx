@@ -14,131 +14,98 @@ type AppUpdateGateProps = {
   children: ReactNode;
 };
 
-const GATE_CACHE_KEY = 'ballpwal-update-gate-v1';
+/** blocked သာ မှတ်ထား — ready cache မသုံး (update မလွှတ်အောင်) */
+const BLOCKED_CACHE_KEY = 'ballpwal-update-blocked-v2';
 
-type GateCache = {
-  gate: GateState;
-  latest: AppVersionInfo | null;
+type BlockedCache = {
+  latest: AppVersionInfo;
   installedCode: number;
   installedName: string;
 };
 
-function readGateCache(): GateCache | null {
+function readBlockedCache(): BlockedCache | null {
   try {
-    const raw = sessionStorage.getItem(GATE_CACHE_KEY);
+    const raw = sessionStorage.getItem(BLOCKED_CACHE_KEY);
     if (!raw) {
       return null;
     }
-    const parsed = JSON.parse(raw) as GateCache;
-    if (parsed.gate === 'blocked' || parsed.gate === 'ready' || parsed.gate === 'check-failed') {
-      return parsed;
-    }
+    return JSON.parse(raw) as BlockedCache;
   } catch {
-    // ignore
+    return null;
   }
-  return null;
 }
 
-function writeGateCache(cache: GateCache) {
+function writeBlockedCache(cache: BlockedCache) {
   try {
-    sessionStorage.setItem(GATE_CACHE_KEY, JSON.stringify(cache));
+    sessionStorage.setItem(BLOCKED_CACHE_KEY, JSON.stringify(cache));
   } catch {
     // ignore
   }
 }
 
-function resolveGate(remote: AppVersionInfo | null, localCode: number): GateState {
-  if (!remote?.versionCode) {
-    return 'check-failed';
+function clearBlockedCache() {
+  try {
+    sessionStorage.removeItem(BLOCKED_CACHE_KEY);
+  } catch {
+    // ignore
   }
-  if (localCode > 0 && localCode >= remote.versionCode) {
-    return 'ready';
-  }
-  return 'blocked';
 }
 
-/** Native App — update မလုပ်ရင် children မပြပါ (မှိတ်တုတ် မဖြစ်အောင် တစ်ကြိမ်သာ စစ်) */
+function needsUpdate(remote: AppVersionInfo, localCode: number) {
+  return localCode < remote.versionCode;
+}
+
+/** Native App — update မလုပ်ရင် children မပြပါ */
 export function AppUpdateGate({ children }: AppUpdateGateProps) {
-  const cached = Capacitor.isNativePlatform() ? readGateCache() : null;
+  const blockedBoot = Capacitor.isNativePlatform() ? readBlockedCache() : null;
   const [gate, setGate] = useState<GateState>(() => {
     if (!Capacitor.isNativePlatform()) {
       return 'ready';
     }
-    if (cached?.gate && cached.gate !== 'checking') {
-      return cached.gate;
-    }
-    return 'checking';
+    return blockedBoot ? 'blocked' : 'checking';
   });
-  const [latest, setLatest] = useState<AppVersionInfo | null>(cached?.latest ?? null);
-  const [installedCode, setInstalledCode] = useState(cached?.installedCode ?? 0);
-  const [installedName, setInstalledName] = useState(cached?.installedName ?? '');
+  const [latest, setLatest] = useState<AppVersionInfo | null>(blockedBoot?.latest ?? null);
+  const [installedCode, setInstalledCode] = useState(blockedBoot?.installedCode ?? 0);
+  const [installedName, setInstalledName] = useState(blockedBoot?.installedName ?? '');
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const checkedRef = useRef(false);
+
+  const applyCheck = async () => {
+    const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
+
+    let versionLabel = '';
+    try {
+      versionLabel = (await App.getInfo()).version;
+    } catch {
+      versionLabel = '';
+    }
+
+    if (!remote?.versionCode) {
+      setGate('check-failed');
+      return;
+    }
+
+    setLatest(remote);
+    setInstalledCode(localCode);
+    setInstalledName(versionLabel);
+
+    if (needsUpdate(remote, localCode)) {
+      setGate('blocked');
+      writeBlockedCache({ latest: remote, installedCode: localCode, installedName: versionLabel });
+      return;
+    }
+
+    clearBlockedCache();
+    setGate('ready');
+  };
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || checkedRef.current) {
       return;
     }
     checkedRef.current = true;
-
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
-        if (cancelled) {
-          return;
-        }
-
-        let versionLabel = '';
-        try {
-          versionLabel = (await App.getInfo()).version;
-        } catch {
-          versionLabel = '';
-        }
-
-        const nextGate = resolveGate(remote, localCode);
-        setLatest(remote);
-        setInstalledCode(localCode);
-        setInstalledName(versionLabel);
-        setGate(nextGate);
-        writeGateCache({
-          gate: nextGate,
-          latest: remote,
-          installedCode: localCode,
-          installedName: versionLabel,
-        });
-      } catch {
-        if (cancelled) {
-          return;
-        }
-
-        const previous = readGateCache();
-        if (previous?.gate === 'blocked' && previous.latest) {
-          setLatest(previous.latest);
-          setInstalledCode(previous.installedCode);
-          setInstalledName(previous.installedName);
-          setGate('blocked');
-          return;
-        }
-
-        // Site မရရင် APK ထဲက UI သုံးခွင့် (အင်တာနက် ပြန်ရရင် update စစ်)
-        setGate('ready');
-        writeGateCache({
-          gate: 'ready',
-          latest: null,
-          installedCode: 0,
-          installedName: '',
-        });
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
+    void applyCheck().catch(() => setGate('check-failed'));
   }, []);
 
   if (!Capacitor.isNativePlatform()) {
@@ -161,36 +128,9 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   };
 
   const handleRetry = () => {
-    checkedRef.current = false;
-    sessionStorage.removeItem(GATE_CACHE_KEY);
     setGate('checking');
     setError('');
-    checkedRef.current = true;
-
-    void (async () => {
-      try {
-        const [remote, localCode] = await Promise.all([fetchLatestAppVersion(), getInstalledVersionCode()]);
-        let versionLabel = '';
-        try {
-          versionLabel = (await App.getInfo()).version;
-        } catch {
-          versionLabel = '';
-        }
-        const nextGate = resolveGate(remote, localCode);
-        setLatest(remote);
-        setInstalledCode(localCode);
-        setInstalledName(versionLabel);
-        setGate(nextGate);
-        writeGateCache({
-          gate: nextGate,
-          latest: remote,
-          installedCode: localCode,
-          installedName: versionLabel,
-        });
-      } catch {
-        setGate('check-failed');
-      }
-    })();
+    void applyCheck().catch(() => setGate('check-failed'));
   };
 
   if (gate === 'ready') {
@@ -208,8 +148,10 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   if (gate === 'check-failed') {
     return (
       <div className="m-update-block">
-        <p className="m-update-block-title">ချိတ်ဆက်မှု မအောင်မြင်ပါ</p>
-        <p className="m-update-block-msg">အင်တာနက် စစ်ပြီး ပြန် ကြိုးစားပါ</p>
+        <p className="m-update-block-title">ဗားရှင်း စစ်၍ မရပါ</p>
+        <p className="m-update-block-msg">
+          အင်တာနက် / VPN စစ်ပြီး ပြန် စမ်းပါ။ Update အသစ် ရယူရန် ချိတ်ဆက်မှု လိုအပ်ပါသည်။
+        </p>
         {error ? <p className="m-error">{error}</p> : null}
         <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={handleRetry}>
           ပြန် စမ်းမည်
@@ -224,12 +166,14 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
         <span className="m-update-badge">ဗားရှင်း အသစ် လိုအပ်ပါသည်</span>
         <h2>Update မလုပ်ရင် App သုံးမရပါ</h2>
         <p>
-          လက်ရှိ <strong>{installedName || `build ${installedCode}`}</strong> → အသစ်{' '}
-          <strong>{latest?.versionName ?? '—'}</strong>
+          လက်ရှိ <strong>{installedName || `build ${installedCode}`}</strong> (v{installedCode}) → အသစ်{' '}
+          <strong>
+            {latest?.versionName ?? '—'} (v{latest?.versionCode ?? '?'})
+          </strong>
         </p>
         {latest?.releaseNotes ? <p className="m-update-notes">{latest.releaseNotes}</p> : null}
         <p className="m-update-hint">
-          <strong>Update</strong> နှိပ်ပါ — App ဖျက်စရာမလိုပါ။ Android တပ်ဆင်ရန် မျက်နှာပြင် ပေါ်လာပါမယ်။
+          <strong>Update ယခု လုပ်မည်</strong> နှိပ်ပါ — App ဖျက်စရာမလိုပါ။
         </p>
         {error ? <p className="m-error">{error}</p> : null}
         <div className="m-update-actions">

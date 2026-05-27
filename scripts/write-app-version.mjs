@@ -13,7 +13,7 @@ const payload = {
   versionCode,
   versionName,
   apkUrl: `https://ballpwal.org/downloads/9mix-football.apk?v=${versionCode}`,
-  releaseNotes: 'ပြင်ဆင်မှုနှင့် ကြေးရလဒ် အသစ်များ',
+  releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Update စစ်ဆေးမှု ပြင်ဆင်ချက်',
 };
 
 const outPath = join(root, 'public', 'app-version.json');
