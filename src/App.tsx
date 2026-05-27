@@ -402,9 +402,6 @@ function App() {
             </div>
           </div>
           <div className="top-actions">
-            <button type="button" className="ghost-button" onClick={openBetPage}>
-              အကောင့်
-            </button>
             <a className="download-button" href="#matches">
               အက်ပ်ဒေါင်းလုဒ်
             </a>

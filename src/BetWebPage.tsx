@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { UserBettingApp } from './UserBettingApp';
 import { openHomePage } from './navigation';
+import { getSavedLoginCredentials } from './wallet/api';
 import { useAuth } from './wallet/AuthContext';
 
 const CONTACT_DISPLAY = '09674646102';
@@ -11,6 +12,35 @@ export function BetWebPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState('');
+  const [autoTrying, setAutoTrying] = useState(true);
+  const autoLoginStarted = useRef(false);
+
+  useEffect(() => {
+    if (loading || user || autoLoginStarted.current) {
+      if (user || !loading) {
+        setAutoTrying(false);
+      }
+      return;
+    }
+
+    const saved = getSavedLoginCredentials();
+    if (!saved) {
+      setAutoTrying(false);
+      return;
+    }
+
+    autoLoginStarted.current = true;
+    setUsername(saved.username);
+    setPassword(saved.password);
+
+    void login(saved.username, saved.password)
+      .catch((error) => {
+        setStatus(error instanceof Error ? error.message : 'ဝင်ရန် မအောင်မြင်ပါ');
+      })
+      .finally(() => {
+        setAutoTrying(false);
+      });
+  }, [loading, user, login]);
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -26,7 +56,7 @@ export function BetWebPage() {
     }
   };
 
-  if (loading) {
+  if (loading || (autoTrying && !user)) {
     return (
       <div className="standalone-page">
         <p className="standalone-loading">9Mix လောင်းမှု ဖွင့်နေပါတယ်…</p>
@@ -45,7 +75,7 @@ export function BetWebPage() {
           <span className="account-modal-badge">9Mix</span>
           <div>
             <strong>ဘောလုံးလောင်းမှု</strong>
-            <small>Admin ဖွင့်ပေးထားသော account ဖြင့်ဝင်ပါ</small>
+            <small>ပထမဆုံး တစ်ကြိမ် username / password ထည့်ပါ</small>
           </div>
         </div>
 
@@ -70,7 +100,7 @@ export function BetWebPage() {
           </label>
           {status ? <p className="account-modal-status">{status}</p> : null}
           <button type="submit" className="quality-watch live-watch">
-            ဝင်ရန်
+            ဝင်မည်
           </button>
         </form>
 

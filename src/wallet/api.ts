@@ -1,17 +1,48 @@
 import type { WalletTransaction, WalletUser } from './types';
 
 const TOKEN_KEY = 'mix9-auth-token';
+const SAVED_USER_KEY = 'mix9-saved-username';
+const SAVED_PASS_KEY = 'mix9-saved-password';
 
 function getToken() {
-  return sessionStorage.getItem(TOKEN_KEY) || '';
+  const stored = localStorage.getItem(TOKEN_KEY);
+  if (stored) {
+    return stored;
+  }
+  const legacy = sessionStorage.getItem(TOKEN_KEY);
+  if (legacy) {
+    localStorage.setItem(TOKEN_KEY, legacy);
+    sessionStorage.removeItem(TOKEN_KEY);
+    return legacy;
+  }
+  return '';
 }
 
 export function setAuthToken(token: string) {
-  sessionStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearAuthToken() {
-  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export function saveLoginCredentials(username: string, password: string) {
+  localStorage.setItem(SAVED_USER_KEY, username);
+  localStorage.setItem(SAVED_PASS_KEY, password);
+}
+
+export function getSavedLoginCredentials() {
+  const username = localStorage.getItem(SAVED_USER_KEY) || '';
+  const password = localStorage.getItem(SAVED_PASS_KEY) || '';
+  if (!username || !password) {
+    return null;
+  }
+  return { username, password };
+}
+
+export function clearSavedLoginCredentials() {
+  localStorage.removeItem(SAVED_USER_KEY);
+  localStorage.removeItem(SAVED_PASS_KEY);
 }
 
 async function walletFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -56,6 +87,7 @@ export async function login(username: string, password: string) {
     body: JSON.stringify({ username, password }),
   });
   setAuthToken(result.token);
+  saveLoginCredentials(username, password);
   return result.user;
 }
 
@@ -64,6 +96,7 @@ export async function logout() {
     await walletFetch('logout', { method: 'POST' });
   } finally {
     clearAuthToken();
+    clearSavedLoginCredentials();
   }
 }
 
