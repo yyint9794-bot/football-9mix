@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RootApp } from './RootApp';
@@ -37,6 +38,10 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
   const detail = reason instanceof Error ? reason.message : String(reason);
+  if (Capacitor.isNativePlatform() && detail.includes('AdSense')) {
+    event.preventDefault();
+    return;
+  }
   showBootError(`App မဖွင့်နိုင်ပါ — ${detail}<br><br>Cache ရှင်းပြီး refresh လုပ်ပါ`);
 });
 

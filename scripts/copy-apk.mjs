@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,3 +21,4 @@ const target = join(outDir, '9mix-football.apk');
 mkdirSync(outDir, { recursive: true });
 copyFileSync(source, target);
 console.log(`Copied ${source} -> ${target}`);
+spawnSync(process.execPath, [join(root, 'scripts', 'write-app-version.mjs')], { stdio: 'inherit' });

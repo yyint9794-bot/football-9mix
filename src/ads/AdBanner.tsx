@@ -27,13 +27,17 @@ export function AdBanner({
 
     let cancelled = false;
 
-    void loadAdsenseScript(ADSENSE_CLIENT).then(() => {
-      if (cancelled || pushed.current) {
-        return;
-      }
-      pushAdSlot();
-      pushed.current = true;
-    });
+    void loadAdsenseScript(ADSENSE_CLIENT)
+      .then(() => {
+        if (cancelled || pushed.current) {
+          return;
+        }
+        pushAdSlot();
+        pushed.current = true;
+      })
+      .catch(() => {
+        // AdSense blocked — skip unit.
+      });
 
     return () => {
       cancelled = true;

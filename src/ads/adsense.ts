@@ -25,7 +25,14 @@ export function loadAdsenseScript(client: string) {
         return;
       }
       existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error('AdSense script failed')), { once: true });
+      existing.addEventListener(
+        'error',
+        () => {
+          scriptPromise = null;
+          reject(new Error('AdSense script failed'));
+        },
+        { once: true },
+      );
       return;
     }
 
@@ -38,7 +45,10 @@ export function loadAdsenseScript(client: string) {
       script.dataset.loaded = 'true';
       resolve();
     };
-    script.onerror = () => reject(new Error('AdSense script failed'));
+    script.onerror = () => {
+      scriptPromise = null;
+      reject(new Error('AdSense script failed'));
+    };
     document.head.appendChild(script);
   });
 

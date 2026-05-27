@@ -1,8 +1,13 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+spawnSync(process.execPath, [join(root, 'scripts', 'write-app-version.mjs')], {
+  stdio: 'inherit',
+});
 const apk = join(root, 'public', 'downloads', '9mix-football.apk');
 const distDir = join(root, 'dist', 'downloads');
 

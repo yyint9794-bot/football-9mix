@@ -13,7 +13,9 @@ export function initGoogleAdsenseMonetization() {
     ensureMeta('google-site-verification', ADSENSE_VERIFICATION);
   }
 
-  void loadAdsenseScript(ADSENSE_CLIENT);
+  void loadAdsenseScript(ADSENSE_CLIENT).catch(() => {
+    // WebView / ad-block — app must still run (especially native APK).
+  });
 }
 
 function ensureMeta(name: string, content: string) {
