@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import type { FirebaseOptions } from 'firebase/app';
 
 export type FirebaseWebConfigFile = FirebaseOptions & {
@@ -38,10 +39,9 @@ export async function loadFirebaseWebConfig(): Promise<FirebaseWebConfigFile | n
     return fromEnv;
   }
 
-  const urls = [
-    'https://ballpwal.org/firebase-config.json',
-    '/firebase-config.json',
-  ];
+  const urls = Capacitor.isNativePlatform()
+    ? ['/firebase-config.json', 'https://ballpwal.org/firebase-config.json']
+    : ['https://ballpwal.org/firebase-config.json', '/firebase-config.json'];
 
   for (const path of urls) {
     try {

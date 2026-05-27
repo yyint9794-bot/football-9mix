@@ -9,6 +9,10 @@ const gradle = readFileSync(gradlePath, 'utf8');
 
 const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
 const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0';
+const minRequiredMatch = /minRequiredVersionCode\s+(\d+)/.exec(gradle);
+const minRequiredVersionCode = minRequiredMatch
+  ? Number(minRequiredMatch[1])
+  : Math.max(1, versionCode - 1);
 const { publicBaseUrl } = loadApkHostingConfig();
 const apkUrl = apkPublicUrl(versionCode);
 const apkName = apkFileName(versionCode);
@@ -52,10 +56,11 @@ export const PUBLISHED_VERSION_NAME = '${versionName}';
 export const PUBLISHED_APK_URL = '${apkUrl}';
 export const PUBLISHED_APK_URL_SITE = '${apkUrl}';
 export const PUBLISHED_RELEASE_NOTES = ${JSON.stringify(payload.releaseNotes)};
+export const MINIMUM_REQUIRED_VERSION_CODE = ${minRequiredVersionCode};
 `,
   'utf8',
 );
-console.log(`Wrote ${publishedPath}`);
+console.log(`Wrote ${publishedPath} (min required ${minRequiredVersionCode})`);
 
 const appDownloadPath = join(root, 'src', 'appDownload.ts');
 const appDownload = readFileSync(appDownloadPath, 'utf8');

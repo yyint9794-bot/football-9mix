@@ -1,4 +1,5 @@
-import { fetchAndActivate, getRemoteConfig, getValue, type RemoteConfig } from 'firebase/remote-config';
+import { Capacitor } from '@capacitor/core';
+import { fetchAndActivate, fetchConfig, getRemoteConfig, getValue, type RemoteConfig } from 'firebase/remote-config';
 import { getFirebaseApp } from './firebaseApp';
 import { APP_DOWNLOAD_PAGE, type AppVersionInfo } from './appVersionInfo';
 import { parseReleaseFeatures } from './parseReleaseFeatures';
@@ -42,8 +43,8 @@ async function ensureRemoteConfig() {
   remoteConfig = getRemoteConfig(firebaseApp);
 
   remoteConfig.defaultConfig = {
-    app_min_version_code: '1',
-    app_latest_version_code: String(PUBLISHED_VERSION_CODE),
+    app_min_version_code: '13',
+    app_latest_version_code: String(Math.max(PUBLISHED_VERSION_CODE, 13)),
     app_version_name: PUBLISHED_VERSION_NAME,
     app_download_url: APP_DOWNLOAD_PAGE,
     app_release_notes: PUBLISHED_RELEASE_NOTES,
@@ -52,11 +53,16 @@ async function ensureRemoteConfig() {
   };
 
   remoteConfig.settings = {
-    minimumFetchIntervalMillis: import.meta.env.DEV ? 0 : 5 * 60 * 1000,
-    fetchTimeoutMillis: 12_000,
+    minimumFetchIntervalMillis: 0,
+    fetchTimeoutMillis: 15_000,
   };
 
-  await fetchAndActivate(remoteConfig);
+  if (Capacitor.isNativePlatform()) {
+    await fetchConfig(remoteConfig);
+    await fetchAndActivate(remoteConfig);
+  } else {
+    await fetchAndActivate(remoteConfig);
+  }
   return remoteConfig;
 }
 

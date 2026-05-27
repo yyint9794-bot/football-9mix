@@ -1,20 +1,47 @@
 import { Capacitor } from '@capacitor/core';
 import { fetchFirebaseAppVersion } from './firebaseUpdate';
+import { NativeAppUpdate } from './appUpdatePlugin';
 import { APP_DOWNLOAD_PAGE, type AppVersionInfo } from './appVersionInfo';
 import { parseReleaseFeatures } from './parseReleaseFeatures';
-import { PUBLISHED_VERSION_CODE } from './publishedVersion';
+import {
+  MINIMUM_REQUIRED_VERSION_CODE,
+  PUBLISHED_RELEASE_NOTES,
+  PUBLISHED_VERSION_CODE,
+  PUBLISHED_VERSION_NAME,
+} from './publishedVersion';
 
 export type { AppVersionInfo } from './appVersionInfo';
 export { APP_DOWNLOAD_PAGE } from './appVersionInfo';
 
-const FETCH_MS = 8000;
+const FETCH_MS = 10_000;
+const VERSION_URLS = [
+  'https://ballpwal.org/app-version.json',
+  'https://www.ballpwal.org/app-version.json',
+];
 
 function withCacheBust(url: string) {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}cb=${Date.now()}`;
 }
 
-async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
+async function fetchNative(url: string) {
+  try {
+    const { CapacitorHttp } = await import('@capacitor/core');
+    const response = await CapacitorHttp.get({
+      url,
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+    if (response.status < 200 || response.status >= 300) {
+      return null;
+    }
+    const text = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    return text;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWeb(url: string) {
   const controller = new AbortController();
   const timer = globalThis.setTimeout(() => controller.abort(), FETCH_MS);
   try {
@@ -26,34 +53,7 @@ async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
     if (!response.ok) {
       return null;
     }
-    const text = await response.text();
-    if (!text.trim().startsWith('{')) {
-      return null;
-    }
-    const data = JSON.parse(text) as AppVersionInfo & {
-      releaseFeatures?: string[] | string;
-      forceUpdate?: boolean;
-    };
-    if (!data?.versionCode || data.versionCode < 1) {
-      return null;
-    }
-
-    const features =
-      Array.isArray(data.releaseFeatures)
-        ? data.releaseFeatures.map((item) => String(item).trim()).filter(Boolean)
-        : parseReleaseFeatures(typeof data.releaseFeatures === 'string' ? data.releaseFeatures : '');
-
-    return {
-      versionCode: data.versionCode,
-      versionName: String(data.versionName || data.versionCode),
-      apkUrl: APP_DOWNLOAD_PAGE,
-      apkUrlSite: APP_DOWNLOAD_PAGE,
-      releaseNotes: data.releaseNotes,
-      releaseFeatures: features,
-      forceUpdate: data.forceUpdate !== false,
-      minVersionCode: data.versionCode,
-      source: 'json',
-    };
+    return await response.text();
   } catch {
     return null;
   } finally {
@@ -61,15 +61,92 @@ async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
   }
 }
 
-/** Firebase Remote Config → ballpwal.org/app-version.json (bundled ဗားရှင်းကို latest အဖြစ် မသုံး) */
+function parseVersionPayload(text: string): AppVersionInfo | null {
+  if (!text.trim().startsWith('{')) {
+    return null;
+  }
+  const data = JSON.parse(text) as AppVersionInfo & {
+    releaseFeatures?: string[] | string;
+    forceUpdate?: boolean;
+  };
+  if (!data?.versionCode || data.versionCode < 1) {
+    return null;
+  }
+
+  const features =
+    Array.isArray(data.releaseFeatures)
+      ? data.releaseFeatures.map((item) => String(item).trim()).filter(Boolean)
+      : parseReleaseFeatures(typeof data.releaseFeatures === 'string' ? data.releaseFeatures : '');
+
+  return {
+    versionCode: data.versionCode,
+    versionName: String(data.versionName || data.versionCode),
+    apkUrl: APP_DOWNLOAD_PAGE,
+    apkUrlSite: APP_DOWNLOAD_PAGE,
+    releaseNotes: data.releaseNotes,
+    releaseFeatures: features,
+    forceUpdate: data.forceUpdate !== false,
+    minVersionCode: Math.max(data.versionCode, MINIMUM_REQUIRED_VERSION_CODE),
+    source: 'json',
+  };
+}
+
+async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
+  const text = Capacitor.isNativePlatform() ? (await fetchNative(url)) ?? (await fetchWeb(url)) : await fetchWeb(url);
+  if (!text) {
+    return null;
+  }
+  try {
+    return parseVersionPayload(text);
+  } catch {
+    return null;
+  }
+}
+
+export function buildFallbackUpdateInfo(): AppVersionInfo {
+  return {
+    versionCode: PUBLISHED_VERSION_CODE,
+    versionName: PUBLISHED_VERSION_NAME,
+    apkUrl: APP_DOWNLOAD_PAGE,
+    apkUrlSite: APP_DOWNLOAD_PAGE,
+    releaseNotes: PUBLISHED_RELEASE_NOTES,
+    releaseFeatures: parseReleaseFeatures(
+      'Live Chat — ချက်ချင်း မြင်ရမည်|Update မလုပ်ရသေးရင် App မဖွင့်|မောင်း/ဘော်ဒီ UI|Live ကြည့်ရှု + Chat',
+    ),
+    forceUpdate: true,
+    minVersionCode: Math.max(MINIMUM_REQUIRED_VERSION_CODE, PUBLISHED_VERSION_CODE),
+    source: 'bundled',
+  };
+}
+
+/** Firebase → web JSON → APK ထဲ bundled app-version.json */
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   const firebase = await fetchFirebaseAppVersion();
   if (firebase?.versionCode) {
-    return firebase;
+    return {
+      ...firebase,
+      minVersionCode: Math.max(
+        firebase.minVersionCode ?? 0,
+        firebase.versionCode,
+        MINIMUM_REQUIRED_VERSION_CODE,
+      ),
+      forceUpdate: true,
+    };
   }
 
-  const jsonUrl = withCacheBust('https://ballpwal.org/app-version.json');
-  return fetchJsonVersion(jsonUrl);
+  for (const base of VERSION_URLS) {
+    const remote = await fetchJsonVersion(withCacheBust(base));
+    if (remote?.versionCode) {
+      return remote;
+    }
+  }
+
+  const bundled = await fetchJsonVersion('/app-version.json');
+  if (bundled?.versionCode) {
+    return bundled;
+  }
+
+  return buildFallbackUpdateInfo();
 }
 
 export async function openAppDownloadPage(url?: string) {
@@ -81,7 +158,7 @@ export async function openAppDownloadPage(url?: string) {
       await Browser.open({ url: target });
       return;
     } catch {
-      // Browser plugin missing
+      // fall through
     }
   }
 
@@ -94,16 +171,21 @@ export async function getInstalledVersionCode(): Promise<number> {
   }
 
   try {
+    const native = await NativeAppUpdate.getVersionCode();
+    const code = Number.parseInt(String(native.code), 10);
+    if (Number.isFinite(code) && code > 0) {
+      return code;
+    }
+  } catch {
+    // fall through
+  }
+
+  try {
     const { App } = await import('@capacitor/app');
     const info = await App.getInfo();
     const build = Number.parseInt(String(info.build), 10);
     if (Number.isFinite(build) && build > 0) {
       return build;
-    }
-    const versionDigits = String(info.version || '').replace(/\D/g, '');
-    const fromName = Number.parseInt(versionDigits, 10);
-    if (Number.isFinite(fromName) && fromName > 0) {
-      return fromName;
     }
   } catch {
     // fall through
@@ -113,7 +195,11 @@ export async function getInstalledVersionCode(): Promise<number> {
 }
 
 export function requiresAppUpdate(remote: AppVersionInfo, localCode: number) {
-  const required = Math.max(remote.minVersionCode ?? 0, remote.versionCode);
+  const required = Math.max(
+    remote.minVersionCode ?? 0,
+    remote.versionCode,
+    MINIMUM_REQUIRED_VERSION_CODE,
+  );
   if (!Number.isFinite(required) || required < 1) {
     return false;
   }
@@ -122,15 +208,15 @@ export function requiresAppUpdate(remote: AppVersionInfo, localCode: number) {
   return local < required;
 }
 
-export function isUpdateMandatory(remote: AppVersionInfo) {
-  return remote.forceUpdate !== false;
+export function isUpdateMandatory(_remote: AppVersionInfo) {
+  return true;
 }
 
 export function getEffectiveInstalledCode(localCode: number) {
   return localCode > 0 ? localCode : 1;
 }
 
-/** APK ထဲ bundled version — remote မရရင် နှိုင်းယှဉ်မသုံး */
-export function getBundledVersionCode() {
-  return PUBLISHED_VERSION_CODE;
+export function needsMinimumClientUpdate(localCode: number) {
+  const local = getEffectiveInstalledCode(localCode);
+  return local < MINIMUM_REQUIRED_VERSION_CODE;
 }

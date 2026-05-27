@@ -19,6 +19,24 @@ import java.net.URL;
 public class AppUpdatePlugin extends Plugin {
 
   @PluginMethod
+  public void getVersionCode(PluginCall call) {
+    try {
+      android.content.pm.PackageInfo info =
+          getContext()
+              .getPackageManager()
+              .getPackageInfo(getContext().getPackageName(), 0);
+      long raw =
+          android.os.Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+      JSObject result = new JSObject();
+      result.put("code", (int) raw);
+      result.put("name", info.versionName != null ? info.versionName : "");
+      call.resolve(result);
+    } catch (Exception error) {
+      call.reject("ဗားရှင်း မဖတ်ရပါ: " + error.getMessage());
+    }
+  }
+
+  @PluginMethod
   public void installApk(PluginCall call) {
     String url = call.getString("url");
     if (url == null || url.trim().isEmpty()) {
