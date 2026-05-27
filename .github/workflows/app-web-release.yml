@@ -1,4 +1,4 @@
-# App ပြင်တိုင်း — APK build + Web ဒေါင်းလုဒ် sync + ballpwal.org deploy တစ်ခါတည်း
+# App + Web — APK → Cloudflare R2 (GitHub 100MB limit မသုံး)
 name: App + Web release
 
 on:
@@ -10,11 +10,12 @@ on:
       - 'src/**'
       - 'public/**'
       - 'scripts/**'
+      - 'functions/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
-      - 'remoteconfig.template.json'
-      - 'firebase.json'
+      - 'wrangler.toml'
+      - 'apk-hosting.config.json'
 
 concurrency:
   group: app-web-release
@@ -23,8 +24,6 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -43,34 +42,14 @@ jobs:
       - run: chmod +x android/gradlew
       - run: npm ci
 
-      - name: Build APK + sync web download files
-        run: |
-          npm run android:apk
-          node scripts/sync-web-download.mjs
+      - name: Build APK
+        run: npm run android:apk
 
-      - name: Verify APK
-        run: |
-          CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
-          APK="public/downloads/9mix-football-v${CODE}.apk"
-          BYTES=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")
-          echo "APK $APK bytes: $BYTES"
-          test "$BYTES" -gt 8000000
-
-      - name: Commit APK + web download (GitHub raw)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/*.apk public/_redirects public/apk.html \
-            public/app-version.json public/firebase-config.json \
-            src/native/publishedVersion.ts src/appDownload.ts \
-            functions/_generated/appVersion.mjs android/app/build.gradle
-          if git diff --staged --quiet; then
-            echo "No APK/web changes to commit."
-          else
-            CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
-            git commit -m "release: app v${CODE} + web APK download"
-            git push
-          fi
+      - name: Upload APK to Cloudflare R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/upload-apk-r2.mjs
 
       - name: Deploy site to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

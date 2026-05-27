@@ -1,9 +1,9 @@
 /**
- * App + Web တစ်ခါတည်း:
- *   npm run release        — build APK, web download sync, push (CI deploy)
- *   npm run release:bump   — versionCode +1 ပြီးမှ release
+ * App + Web — APK → Cloudflare R2 (GitHub မသုံး)
+ *   npm run release
+ *   npm run release:bump
  */
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -13,7 +13,6 @@ const gradlePath = join(root, 'android', 'app', 'build.gradle');
 const isWin = process.platform === 'win32';
 
 function run(cmd, args = []) {
-  // Windows shell:true breaks git commit -m when message has ( ) +
   const useShell = isWin && (cmd === 'npm' || cmd === 'npm.cmd');
   const result = spawnSync(cmd, args, {
     cwd: root,
@@ -50,22 +49,26 @@ const bump = process.argv.includes('--bump');
 if (bump) bumpGradle();
 
 const { versionCode, versionName } = readVersion();
-console.log('=== 9Mix release (App + Web download အော်တို) ===');
+console.log('=== 9Mix release (R2 + ballpwal.org — GitHub APK မသုံး) ===');
 console.log(`Target: v${versionName} (build ${versionCode})\n`);
 
-console.log('① APK build + app-version + web download (apk.html, _redirects)…\n');
+console.log('① APK build…\n');
 const apkStatus = run('npm', ['run', 'android:apk']);
 if (apkStatus !== 0) {
-  console.warn(
-    '\n⚠ APK build မအောင်မြင်ပါ (Java/Android SDK).\n' +
-      '  Version + web link သာ sync — push ပြီးရင် GitHub Actions က APK+Web တင်ပေး.\n',
-  );
+  console.warn('\n⚠ APK build မအောင်မြင်ပါ.\n');
   run('node', ['scripts/write-app-version.mjs']);
   run('node', ['scripts/sync-web-download.mjs']);
+} else {
+  console.log('\n② Upload APK → Cloudflare R2…\n');
+  const uploadStatus = run('node', ['scripts/upload-apk-r2.mjs']);
+  if (uploadStatus !== 0) {
+    console.warn('\n⚠ R2 upload မအောင်မြင်ပါ — Dashboard မှာ bucket + binding စစ်ပါ (docs/APK_HOSTING_R2.md)\n');
+  }
 }
 
 const syncFiles = [
   'android/app/build.gradle',
+  'apk-hosting.config.json',
   'public/app-version.json',
   'public/firebase-config.json',
   'public/_redirects',
@@ -73,46 +76,26 @@ const syncFiles = [
   'src/native/publishedVersion.ts',
   'src/appDownload.ts',
   'functions/_generated/appVersion.mjs',
+  'functions/downloads/[[path]].js',
+  'wrangler.toml',
 ];
-
-const downloadsDir = join(root, 'public', 'downloads');
-const versionedApk = `public/downloads/9mix-football-v${versionCode}.apk`;
-const latestApk = 'public/downloads/9mix-football.apk';
-const maxGitApkBytes = 50 * 1024 * 1024;
-
-for (const rel of [versionedApk, latestApk]) {
-  const full = join(root, rel);
-  if (!existsSync(full)) {
-    continue;
-  }
-  const bytes = statSync(full).size;
-  if (bytes > maxGitApkBytes) {
-    console.warn(
-      `\n⚠ ${rel} = ${Math.round(bytes / 1024 / 1024)} MB — GitHub 100MB limit. APK ကို git မတင်ပါ (ဖုန်းသို့ ဒီဖိုင်ကို တိုက်ရိုက် install လုပ်ပါ).`,
-    );
-    console.warn('   GitHub Actions က APK ~10–35MB build လုပ်ပြီး web download ပြင်ပေးမည်.\n');
-    continue;
-  }
-  syncFiles.unshift(rel);
-}
 
 run('git', ['add', ...syncFiles]);
 
 if (run('git', ['diff', '--staged', '--quiet']) === 0) {
-  console.log('\nပြောင်းလဲမှု မရှိ — ရှိပြီးသား sync ဖြစ်နေပါတယ်.');
+  console.log('\nပြောင်းလဲမှု မရှိ.');
 } else {
-  const msg = `release: app v${versionCode} ${versionName} web-apk-download`;
+  const msg = `release: v${versionCode} ${versionName} r2-apk-hosting`;
   if (run('git', ['commit', '-m', msg]) !== 0) {
-    console.error('\nCommit မအောင်မြင်ပါ — git config / changes စစ်ပါ.');
     process.exit(1);
   }
-  console.log(`\n② Committed: ${msg}`);
+  console.log(`\n③ Committed: ${msg}`);
 }
 
 if (process.env.SKIP_PUSH === '1') {
-  console.log('\nSKIP_PUSH=1 — push မလုပ်ပါ. လက်ဖြင့်: git push origin main');
+  console.log('\nSKIP_PUSH=1');
   process.exit(0);
 }
 
-console.log('\n③ git push → GitHub Actions: APK + Web (ballpwal.org) တစ်ခါတည်း deploy\n');
+console.log('\n④ git push → Pages deploy (APK=R2, GitHub မသုံး)\n');
 process.exit(run('git', ['push', 'origin', 'main']));

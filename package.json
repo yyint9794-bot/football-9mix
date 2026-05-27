@@ -15,6 +15,7 @@
     "release": "node scripts/release.mjs",
     "release:bump": "node scripts/release.mjs --bump",
     "sync:web-download": "node scripts/sync-web-download.mjs",
+    "upload:apk": "node scripts/upload-apk-r2.mjs",
     "firebase:login": "firebase login",
     "firebase:use": "firebase use ballpwal",
     "firebase:remoteconfig": "firebase deploy --only remoteconfig",

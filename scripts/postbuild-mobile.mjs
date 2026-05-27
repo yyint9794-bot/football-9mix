@@ -25,6 +25,6 @@ if (existsSync(firebaseConfig)) {
 const apkInDist = join(root, 'dist', 'downloads', '9mix-football.apk');
 if (existsSync(apkInDist)) {
   unlinkSync(apkInDist);
-  console.log('Removed APK from dist (Pages 25MB limit) — /downloads/ redirects to jsDelivr');
+  console.log('Removed APK from dist (Pages 25MB limit) — /downloads/ served from R2');
 }
 spawnSync(process.execPath, [join(root, 'scripts', 'write-dist-assetsignore.mjs')], { stdio: 'inherit' });

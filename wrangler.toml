@@ -8,6 +8,11 @@ pages_build_output_dir = "dist"
 binding = "WALLET_KV"
 id = "bc9dd5cfce4b44d397e7c127bf418853"
 
+# APK ဒေါင်းလုဒ် (GitHub မသုံး — R2 မှာ သိမ်း)
+[[r2_buckets]]
+binding = "APK_BUCKET"
+bucket_name = "9mix-football-apk"
+
 # Pages Functions runtime (plain text). Password → Dashboard Secret only.
 [vars]
 STREAM_REFERER = "https://ballpwal.org/"

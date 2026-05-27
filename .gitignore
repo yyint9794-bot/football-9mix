@@ -7,6 +7,7 @@ vite.config.js
 *.tsbuildinfo
 .DS_Store
 
-# APK: commit public/downloads/9mix-football.apk for Cloudflare Pages direct download
+# APK — Cloudflare R2 သို့ upload (GitHub မတင်)
+public/downloads/*.apk
 .tools/
 android/local.properties

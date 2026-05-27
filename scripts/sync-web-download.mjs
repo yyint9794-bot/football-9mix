@@ -1,39 +1,32 @@
 /**
- * App build.gradle ဗားရှင်းနဲ့ Web ဒေါင်းလုဒ် (_redirects, apk.html) ကို တစ်ခါတည်း sync
+ * Web ဒေါင်းလုဒ် — ballpwal.org/downloads (R2, GitHub မသုံး)
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { apkFileName, apkPublicUrl, loadApkHostingConfig } from './apk-hosting.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const gh = 'yyint9794-bot/football-9mix';
 const gradle = readFileSync(join(root, 'android', 'app', 'build.gradle'), 'utf8');
 const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
 const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0.0';
-const apkName = `9mix-football-v${versionCode}.apk`;
-const rawApk = `https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}`;
+const downloadUrl = apkPublicUrl(versionCode);
+const { publicBaseUrl } = loadApkHostingConfig();
 
-function apkRedirectLines() {
-  const lines = [];
-  const add = (path) => {
-    lines.push(`${path}  ${rawApk}  302`);
-  };
-  add(`/downloads/${apkName}`);
-  for (let v = Math.max(1, versionCode - 3); v < versionCode; v += 1) {
-    add(`/downloads/9mix-football-v${v}.apk`);
+/** GitHub redirect မသုံး — Pages Function + R2 က /downloads/* ကို ပေး */
+function syncRedirects() {
+  const redirectsPath = join(root, 'public', '_redirects');
+  let redirects = readFileSync(redirectsPath, 'utf8');
+  redirects = redirects.replace(
+    /\/downloads\/9mix-football[^\n]*\n(?:\/downloads\/9mix-football[^\n]*\n)*/g,
+    '',
+  );
+  if (!redirects.includes('# apk: R2 via functions/downloads')) {
+    const marker = '/apk.html  /apk.html  200\n';
+    redirects = redirects.replace(marker, `${marker}# apk: R2 via functions/downloads — no GitHub\n`);
   }
-  add('/downloads/9mix-football.apk');
-  return lines;
+  writeFileSync(redirectsPath, redirects.endsWith('\n') ? redirects : `${redirects}\n`, 'utf8');
 }
-
-const redirectsPath = join(root, 'public', '_redirects');
-const redirects = readFileSync(redirectsPath, 'utf8');
-const apkBlock = apkRedirectLines().join('\n');
-const nextRedirects = redirects.replace(
-  /\/downloads\/9mix-football[^\n]*\n(?:\/downloads\/9mix-football[^\n]*\n)*/,
-  `${apkBlock}\n`,
-);
-writeFileSync(redirectsPath, nextRedirects.endsWith('\n') ? nextRedirects : `${nextRedirects}\n`, 'utf8');
 
 const apkHtmlPath = join(root, 'public', 'apk.html');
 const apkHtml = `<!DOCTYPE html>
@@ -60,19 +53,16 @@ const apkHtml = `<!DOCTYPE html>
         text-decoration: none;
         border-radius: 12px;
       }
-      p.note {
-        color: #94a3b8;
-        font-size: 0.9rem;
-      }
+      p.note { color: #94a3b8; font-size: 0.9rem; }
     </style>
   </head>
   <body>
     <h1>9Mix Football APK</h1>
     <p>ဗားရှင်း <strong>${versionCode} (${versionName})</strong></p>
-    <p class="note">ဖိုင် ~10MB+ ဖြစ်ရမည် — 4MB ဆိုရင် မှားနေပါသည်</p>
+    <p class="note">Cloudflare R2 — GitHub မသုံး (~10MB+)</p>
     <a id="dl" href="#">APK ဒေါင်းလုဒ်</a>
     <script>
-      var url = '${rawApk}';
+      var url = '${downloadUrl}';
       document.getElementById('dl').href = url + '?cb=' + Date.now();
       window.location.replace(document.getElementById('dl').href);
     </script>
@@ -80,7 +70,7 @@ const apkHtml = `<!DOCTYPE html>
 </html>
 `;
 writeFileSync(apkHtmlPath, apkHtml, 'utf8');
+syncRedirects();
 
 console.log(`Synced web download → v${versionCode} (${versionName})`);
-console.log(`  ${apkName}`);
-console.log(`  public/_redirects, public/apk.html`);
+console.log(`  ${downloadUrl}`);

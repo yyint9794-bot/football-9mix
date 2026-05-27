@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { apkFileName, apkPublicUrl, loadApkHostingConfig } from './apk-hosting.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const gradlePath = join(root, 'android', 'app', 'build.gradle');
@@ -8,20 +9,17 @@ const gradle = readFileSync(gradlePath, 'utf8');
 
 const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
 const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0';
-
-const gh = 'yyint9794-bot/football-9mix';
-const apkName = `9mix-football-v${versionCode}.apk`;
-const rawApk = `https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}`;
-const jsDelivrApk = `https://cdn.jsdelivr.net/gh/${gh}@main/public/downloads/${apkName}`;
-const siteApk = `https://ballpwal.org/downloads/${apkName}`;
+const { publicBaseUrl } = loadApkHostingConfig();
+const apkUrl = apkPublicUrl(versionCode);
+const apkName = apkFileName(versionCode);
 
 const payload = {
   versionCode,
   versionName,
-  apkUrl: rawApk,
-  apkUrlCdn: jsDelivrApk,
-  apkUrlSite: siteApk,
-  releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Update စစ်ဆေးမှု ပြင်ဆင်ချက်',
+  apkUrl,
+  apkUrlSite: apkUrl,
+  apkUrlCdn: apkUrl,
+  releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Live Chat၊ Update ပြင်ဆင်ချက်',
 };
 
 const outPath = join(root, 'public', 'app-version.json');
@@ -44,8 +42,8 @@ writeFileSync(
   `/** Auto-generated — APK ထဲတွင် ဗားရှင်း အနည်းဆုံး (build.gradle) */
 export const PUBLISHED_VERSION_CODE = ${versionCode};
 export const PUBLISHED_VERSION_NAME = '${versionName}';
-export const PUBLISHED_APK_URL = '${rawApk}';
-export const PUBLISHED_APK_URL_SITE = '${siteApk}';
+export const PUBLISHED_APK_URL = '${apkUrl}';
+export const PUBLISHED_APK_URL_SITE = '${apkUrl}';
 export const PUBLISHED_RELEASE_NOTES = ${JSON.stringify(payload.releaseNotes)};
 `,
   'utf8',
@@ -58,17 +56,17 @@ const nextBuild = `v${versionCode}`;
 const updated = appDownload
   .replace(/export const APP_APK_VERSION = \d+;/, `export const APP_APK_VERSION = ${versionCode};`)
   .replace(/export const APP_APK_FILENAME = `[^`]+`;/, `export const APP_APK_FILENAME = \`${apkName}\`;`)
-  .replace(
-    /const GH_APK = `[^`]+`;/,
-    `const GH_APK = \`https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}\`;`,
-  )
+  .replace(/const GH_APK = `[^`]+`;/, `const APK_URL = \`${apkUrl}\`;`)
+  .replace(/export const APP_APK_CDN_URL = [^;]+;/, `export const APP_APK_CDN_URL = APK_URL;`)
   .replace(
     /export const APP_APK_BUILD = (?:'[^']*'|`[^`]*`);/,
     `export const APP_APK_BUILD = \`${nextBuild}\`;`,
   );
 if (updated === appDownload) {
-  console.warn('appDownload.ts: APP_APK_BUILD line not updated');
+  console.warn('appDownload.ts: some lines not updated');
 } else {
   writeFileSync(appDownloadPath, updated, 'utf8');
-  console.log(`Updated ${appDownloadPath} — APP_APK_BUILD=${nextBuild}`);
+  console.log(`Updated ${appDownloadPath}`);
 }
+
+console.log(`APK download: ${publicBaseUrl}/${apkName}`);
