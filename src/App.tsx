@@ -14,7 +14,7 @@ import { useAuth } from './wallet/AuthContext';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
 import {
   extractMyanmarOdds,
-  formatBodyPillLabel,
+  formatBodyGivingDisplay,
   formatBodySideLabel,
   formatGoalSideLabel,
 } from './betting/odds';
@@ -873,7 +873,7 @@ function MatchOdds({
                 <div className="odds-pick">
                   <div className="odds-row">
                     <span>ကြေးပေးအသင်း</span>
-                    <b>{formatBodyPillLabel(section, match)}</b>
+                    <b>{formatBodyGivingDisplay(section, match)}</b>
                   </div>
                   <div className="odds-row">
                     <span>အိမ်ရှင် ဘော်ဒီ</span>

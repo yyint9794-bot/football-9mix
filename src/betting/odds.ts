@@ -324,6 +324,21 @@ export function formatBodyPillLabel(section: OddsBodySection, match: Match) {
   return joinBodyLineRate(awayLine, awayRate);
 }
 
+/** ကြေးပေးအသင်း —င်းအမည် + ကြေး (ဥပမာ `လိုဂန် လိုင်နင် 2.5 -5`) */
+export function formatBodyGivingDisplay(section: OddsBodySection, match: Match) {
+  const side = getBodyGivingSide(section, match);
+  const teamName =
+    side === 'home'
+      ? match.homeTeam?.name || section.givingTeam
+      : match.awayTeam?.name || section.givingTeam;
+  const odds = formatBodyPillLabel(section, match);
+  const name = String(teamName || '').trim();
+  if (!name || name === '—') {
+    return odds;
+  }
+  return `${name} ${odds}`;
+}
+
 export function formatBodyCenterLabel(section: OddsBodySection) {
   return joinBodyLineRate(section.homeLine, section.homeRate);
 }
