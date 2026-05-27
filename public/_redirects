@@ -1,4 +1,5 @@
 /download.html  /download.html  200
+/apk.html  /apk.html  200
 /downloads/*  /downloads/:splat  200
 /app-version.json  /app-version.json  200
 /api/*  /api/:splat  200
