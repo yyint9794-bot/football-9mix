@@ -1,7 +1,7 @@
 /** APK — versioned filename (full bundle >=10MB) */
 export const APP_APK_VERSION = 10;
-export const APP_APK_FILENAME = `9mix-football-v${APP_APK_VERSION}.apk`;
-const GH_APK = `https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/${APP_APK_FILENAME}`;
+export const APP_APK_FILENAME = `9mix-football-v10.apk`;
+const GH_APK = `https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v10.apk`;
 export const APP_APK_CDN_URL = GH_APK;
 export const APP_APK_BUILD = `v${APP_APK_VERSION}`;
 
