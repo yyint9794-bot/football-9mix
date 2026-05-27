@@ -3,7 +3,7 @@ export const APP_VERSION = {
   "versionCode": 11,
   "versionName": "1.3.7",
   "apkUrl": "https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk",
-  "apkUrlCdn": "https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix/main/public/downloads/9mix-football-v11.apk",
+  "apkUrlCdn": "https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/downloads/9mix-football-v11.apk",
   "apkUrlSite": "https://ballpwal.org/downloads/9mix-football-v11.apk",
   "releaseNotes": "ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Update စစ်ဆေးမှု ပြင်ဆင်ချက်"
 };

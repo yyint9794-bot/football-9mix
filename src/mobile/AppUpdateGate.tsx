@@ -6,6 +6,7 @@ import {
   getInstalledVersionCode,
   installAppUpdate,
   isAppUpdatePluginAvailable,
+  resolveApkDownloadUrl,
   type AppVersionInfo,
 } from '../native/appUpdate';
 import { PUBLISHED_APK_URL, PUBLISHED_VERSION_CODE } from '../native/publishedVersion';
@@ -128,11 +129,12 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   }
 
   const handleUpdate = async () => {
+    const code = latest?.versionCode ?? PUBLISHED_VERSION_CODE;
     const url = latest?.apkUrl || PUBLISHED_APK_URL;
     setError('');
     setUpdating(true);
     try {
-      await installAppUpdate(url);
+      await installAppUpdate(url, code);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Update မအောင်မြင်ပါ';
       if (/not implemented/i.test(msg)) {
@@ -148,7 +150,8 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
   const nativeUpdate = isAppUpdatePluginAvailable();
 
   const openBrowserDownload = () => {
-    window.location.href = PUBLISHED_APK_URL;
+    const code = latest?.versionCode ?? PUBLISHED_VERSION_CODE;
+    window.location.href = resolveApkDownloadUrl(code, latest?.apkUrl || PUBLISHED_APK_URL);
   };
 
   const handleRetry = () => {
@@ -177,7 +180,7 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
         {debug ? <p className="m-update-hint">{debug}</p> : null}
         {error ? <p className="m-error">{error}</p> : null}
         <div className="m-update-actions">
-          <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={openBrowserDownload}>
+          <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={() => void openBrowserDownload()}>
             APK ဒေါင်းလုဒ် (v{PUBLISHED_VERSION_CODE})
           </button>
           <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={handleRetry}>
@@ -232,7 +235,7 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
               type="button"
               className="m-btn m-btn-ghost m-btn-block"
               disabled={updating}
-              onClick={openBrowserDownload}
+              onClick={() => void openBrowserDownload()}
             >
               APK ဒေါင်းလုဒ် (browser)
             </button>

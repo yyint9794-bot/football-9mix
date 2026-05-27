@@ -10,6 +10,8 @@ on:
       - 'package-lock.json'
       - 'src/**'
       - 'capacitor.config.ts'
+      - 'public/app-version.json'
+      - 'scripts/write-app-version.mjs'
 
 jobs:
   apk:
@@ -33,7 +35,14 @@ jobs:
 
       - run: chmod +x android/gradlew
       - run: npm ci
+      - name: Skip duplicate APK build
+        id: skip
+        run: |
+          if echo "${{ github.event.head_commit.message }}" | grep -q '\[skip apk-build\]'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm run android:apk
+        if: steps.skip.outputs.skip != 'true'
       - name: Verify APK size on disk
         run: |
           CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")

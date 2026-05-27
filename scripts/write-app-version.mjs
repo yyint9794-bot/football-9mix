@@ -12,7 +12,7 @@ const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0';
 const gh = 'yyint9794-bot/football-9mix';
 const apkName = `9mix-football-v${versionCode}.apk`;
 const rawApk = `https://raw.githubusercontent.com/${gh}/main/public/downloads/${apkName}`;
-const jsDelivrApk = `https://cdn.jsdelivr.net/gh/${gh}/main/public/downloads/${apkName}`;
+const jsDelivrApk = `https://cdn.jsdelivr.net/gh/${gh}@main/public/downloads/${apkName}`;
 const siteApk = `https://ballpwal.org/downloads/${apkName}`;
 
 const payload = {

@@ -10,6 +10,7 @@ export type AppVersionInfo = {
   versionCode: number;
   versionName: string;
   apkUrl: string;
+  apkUrlSite?: string;
   apkUrlCdn?: string;
   releaseNotes?: string;
 };
@@ -37,10 +38,38 @@ async function openApkDownload(url: string) {
   window.location.href = url;
 }
 
-const GITHUB_RAW =
-  'https://raw.githubusercontent.com/yyint9794-bot/football-9mix/main/public/app-version.json';
-const JS_DELIVR =
-  'https://cdn.jsdelivr.net/gh/yyint9794-bot/football-9mix@main/public/app-version.json';
+const GH_REPO = 'yyint9794-bot/football-9mix';
+const GITHUB_RAW = `https://raw.githubusercontent.com/${GH_REPO}/main/public/app-version.json`;
+const JS_DELIVR = `https://cdn.jsdelivr.net/gh/${GH_REPO}@main/public/app-version.json`;
+
+function isBrokenJsDelivrUrl(url: string) {
+  return url.includes('cdn.jsdelivr.net') && /\/football-9mix\/main\//.test(url);
+}
+
+/** APK — raw GitHub ဦးစား; v11 မရှိသေးရင် v10 fallback */
+export function apkDownloadCandidates(versionCode: number, primaryUrl?: string): string[] {
+  const urls: string[] = [];
+  const add = (u?: string) => {
+    if (!u || isBrokenJsDelivrUrl(u) || urls.includes(u)) {
+      return;
+    }
+    urls.push(u);
+  };
+
+  add(`https://raw.githubusercontent.com/${GH_REPO}/main/public/downloads/9mix-football-v${versionCode}.apk`);
+  add(`https://ballpwal.org/downloads/9mix-football-v${versionCode}.apk`);
+  add(`https://cdn.jsdelivr.net/gh/${GH_REPO}@main/public/downloads/9mix-football-v${versionCode}.apk`);
+  add(PUBLISHED_APK_URL);
+  add(primaryUrl);
+
+  if (versionCode > 10) {
+    add(`https://raw.githubusercontent.com/${GH_REPO}/main/public/downloads/9mix-football-v10.apk`);
+    add('https://ballpwal.org/downloads/9mix-football-v10.apk');
+    add(`https://cdn.jsdelivr.net/gh/${GH_REPO}@main/public/downloads/9mix-football-v10.apk`);
+  }
+
+  return urls.map(withCacheBust);
+}
 
 function withCacheBust(url: string) {
   const sep = url.includes('?') ? '&' : '?';
@@ -89,7 +118,7 @@ async function fetchOneVersion(url: string): Promise<AppVersionInfo | null> {
     }
     return {
       ...data,
-      apkUrl: data.apkUrlCdn || data.apkUrl || PUBLISHED_APK_URL,
+      apkUrl: data.apkUrl || data.apkUrlSite || data.apkUrlCdn || PUBLISHED_APK_URL,
     };
   } catch {
     return null;
@@ -117,8 +146,14 @@ export async function fetchLatestAppVersion(): Promise<AppVersionInfo> {
   return {
     ...best,
     versionCode: Math.max(best.versionCode, published.versionCode),
-    apkUrl: best.apkUrlCdn || best.apkUrl || PUBLISHED_APK_URL,
+    apkUrl: best.apkUrl || best.apkUrlSite || best.apkUrlCdn || PUBLISHED_APK_URL,
   };
+}
+
+/** APK ဒေါင်းလုဒ် — raw GitHub ဦးစား၊ v11 မရှိသေးရင် v10 သို့ */
+export function resolveApkDownloadUrl(versionCode: number, primaryUrl?: string) {
+  const candidates = apkDownloadCandidates(versionCode, primaryUrl);
+  return candidates[0] || PUBLISHED_APK_URL;
 }
 
 export async function getInstalledVersionCode(): Promise<number> {
@@ -140,8 +175,8 @@ export async function getInstalledVersionCode(): Promise<number> {
   return 0;
 }
 
-export async function installAppUpdate(apkUrl: string) {
-  const url = apkUrl || PUBLISHED_APK_URL;
+export async function installAppUpdate(apkUrl: string, versionCode = PUBLISHED_VERSION_CODE) {
+  const url = resolveApkDownloadUrl(versionCode, apkUrl || PUBLISHED_APK_URL);
 
   if (!Capacitor.isNativePlatform()) {
     const { triggerApkDownload } = await import('../appDownload');
