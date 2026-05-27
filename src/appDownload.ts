@@ -1,5 +1,6 @@
-/** APK hosted on site after `npm run android:apk` */
-export const APP_APK_URL = '/downloads/9mix-football.apk';
+/** APK hosted on site after `npm run android:apk` — bump when rebuilding APK */
+export const APP_APK_BUILD = '20260528-app-v2';
+export const APP_APK_URL = `/downloads/9mix-football.apk?v=${APP_APK_BUILD}`;
 export const APP_APK_FILENAME = '9mix-football.apk';
 
 export function isAndroidDevice() {
