@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737790651624",
+    "project_id": "ballpwal",
+    "storage_bucket": "ballpwal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737790651624:android:dfdee5b547c2eb014cad5d",
+        "android_client_info": {
+          "package_name": "org.ballpwal.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2Pc_t7UlYkx4QK04_Ntb6Nc0uSL2upDY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,9 +1,9 @@
 {
-  "enabled": false,
-  "apiKey": "",
-  "authDomain": "",
-  "projectId": "",
-  "storageBucket": "",
-  "messagingSenderId": "",
-  "appId": ""
+  "enabled": true,
+  "apiKey": "AIzaSyBpJXEAQGhkxbcURok09B69cCp_HWk6IDU",
+  "authDomain": "ballpwal.firebaseapp.com",
+  "projectId": "ballpwal",
+  "storageBucket": "ballpwal.firebasestorage.app",
+  "messagingSenderId": "737790651624",
+  "appId": "1:737790651624:web:d852ea7f1565223d4cad5d"
 }
