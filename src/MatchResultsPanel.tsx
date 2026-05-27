@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { listFinishedMatchesWithScores } from './matchScore';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchMatchResults } from './api';
+import { isResultDisplayMatch, listFinishedMatchesWithScores } from './matchScore';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { TeamLogo } from './TeamLogo';
 import type { Match } from './types';
@@ -9,10 +10,35 @@ type MatchResultsPanelProps = {
   loading?: boolean;
 };
 
-export function MatchResultsPanel({ matches, loading = false }: MatchResultsPanelProps) {
-  const finished = useMemo(() => listFinishedMatchesWithScores(matches), [matches]);
+function mergeResultLists(primary: Match[], extra: Match[]) {
+  const byId = new Map<string, Match>();
+  for (const match of [...extra, ...primary]) {
+    if (!isResultDisplayMatch(match)) {
+      continue;
+    }
+    byId.set(String(match.id), match);
+  }
+  return listFinishedMatchesWithScores(Array.from(byId.values()));
+}
 
-  if (loading) {
+export function MatchResultsPanel({ matches, loading = false }: MatchResultsPanelProps) {
+  const [apiResults, setApiResults] = useState<Match[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setResultsLoading(true);
+    void fetchMatchResults(controller.signal)
+      .then(setApiResults)
+      .catch(() => setApiResults([]))
+      .finally(() => setResultsLoading(false));
+    return () => controller.abort();
+  }, []);
+
+  const finished = useMemo(() => mergeResultLists(matches, apiResults), [matches, apiResults]);
+  const busy = loading || resultsLoading;
+
+  if (busy && !finished.length) {
     return <p className="odds-hint">ပွဲရလဒ် ဖတ်နေပါတယ်…</p>;
   }
 

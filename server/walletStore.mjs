@@ -1,5 +1,10 @@
 import crypto from 'node:crypto';
 import { normalizeDb, parseMultiplier, settleUserBets } from './betSettlement.mjs';
+import {
+  applySiteSettingsPatch,
+  getSiteSettingsFromDb,
+  normalizeSiteSettings,
+} from './siteSettings.mjs';
 import { getEnv, readDb, writeDb } from './walletStorage.mjs';
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -68,10 +73,35 @@ function publicTransaction(tx) {
 }
 
 export async function walletPaymentConfig() {
-  return {
-    kbz: { number: getEnv('WALLET_KPAY_NUMBER', '09674646102'), label: 'KBZ Pay' },
-    wave: { number: getEnv('WALLET_WAVE_NUMBER', '09674646102'), label: 'Wave Pay' },
-  };
+  const db = await readDb();
+  const settings = getSiteSettingsFromDb(db);
+  return settings.payment;
+}
+
+export async function walletSiteSettings() {
+  const db = await readDb();
+  return { settings: getSiteSettingsFromDb(db) };
+}
+
+export async function adminGetSiteSettings(token) {
+  const admin = await getUserFromToken(token);
+  if (!admin || admin.role !== 'admin') {
+    return { error: 'Admin ခွင့်ပြုချက် လိုအပ်ပါတယ်' };
+  }
+  const db = await readDb();
+  return { settings: getSiteSettingsFromDb(db) };
+}
+
+export async function adminUpdateSiteSettings(token, patch) {
+  const admin = await getUserFromToken(token);
+  if (!admin || admin.role !== 'admin') {
+    return { error: 'Admin ခွင့်ပြုချက် လိုအပ်ပါတယ်' };
+  }
+
+  const db = await readDb();
+  db.siteSettings = applySiteSettingsPatch(db.siteSettings, patch);
+  await writeDb(db);
+  return { settings: normalizeSiteSettings(db.siteSettings) };
 }
 
 async function getUserFromToken(token) {

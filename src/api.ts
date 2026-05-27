@@ -476,13 +476,17 @@ function normalizeMmkMatch(match: MmkMatch, source: string): Match {
     match.home?.league?.name ||
     match.away?.league?.name ||
     'မြန်မာကြေး';
-  const status = String(match.status || (match.is_finished || match.completed ? 'Completed' : 'Coming Soon'));
-  const mmkOdds = buildMmkOddsPayload(match);
+  const fromResultsApi = source.includes('results');
   const parsedScores = parseMmkScoresPayload(match as Record<string, unknown>);
   const finishedFromApi =
+    fromResultsApi && Boolean(parsedScores) ||
     match.is_finished === true ||
     match.completed === true ||
     String(match.status || '').toLowerCase().includes('completed');
+  const status = finishedFromApi
+    ? 'completed'
+    : String(match.status || (match.is_finished || match.completed ? 'Completed' : 'Coming Soon'));
+  const mmkOdds = buildMmkOddsPayload(match);
 
   return {
     id: `mmk-${source}-${match.id ?? match.matchId ?? `${homeName}-${awayName}`}`,
@@ -520,7 +524,7 @@ function normalizeMmkMatch(match: MmkMatch, source: string): Match {
       ? {
           ...parsedScores,
           liveScoreFromApi: true,
-          resultFromApi: finishedFromApi,
+          resultFromApi: fromResultsApi || finishedFromApi,
           completed: finishedFromApi ? true : match.completed,
           is_finished: finishedFromApi ? true : match.is_finished,
         }
@@ -771,6 +775,43 @@ export async function getFootballMatches(
   }
 
   return matches;
+}
+
+function resultDisplayKey(match: Match) {
+  return `${match.homeTeam.name}|${match.awayTeam.name}|${getMatchTimeBucket(match.time)}`;
+}
+
+export async function fetchMatchResults(signal?: AbortSignal): Promise<Match[]> {
+  const resultResponses = await Promise.allSettled(
+    MMK_RESULTS_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)),
+  );
+
+  const byKey = new Map<string, Match>();
+  for (const result of resultResponses) {
+    if (result.status !== 'fulfilled') {
+      continue;
+    }
+
+    for (const match of result.value) {
+      if (!hasMatchScore(match)) {
+        continue;
+      }
+
+      const key = resultDisplayKey(match);
+      const existing = byKey.get(key);
+      if (!existing || !hasMatchScore(existing)) {
+        byKey.set(key, match);
+      }
+    }
+  }
+
+  return Array.from(byKey.values())
+    .filter((match) => isRecentMatchTime(match.time))
+    .sort((a, b) => {
+      const timeA = new Date(a.time).getTime() || 0;
+      const timeB = new Date(b.time).getTime() || 0;
+      return timeB - timeA;
+    });
 }
 
 export type StreamQuality = 'fullhd' | 'hd' | 'sd';

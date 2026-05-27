@@ -13,6 +13,21 @@ export type PaymentConfig = {
   wave: { number: string; label: string };
 };
 
+export type SiteBannerSlot = 'web' | 'bet' | 'hub' | 'app';
+
+export type SiteBanner = {
+  imageUrl: string;
+  linkUrl: string;
+  enabled: boolean;
+  alt: string;
+};
+
+export type SiteSettings = {
+  payment: PaymentConfig;
+  announcement: { text: string; enabled: boolean };
+  banners: Record<SiteBannerSlot, SiteBanner>;
+};
+
 const KPAY_FALLBACK = import.meta.env.VITE_WALLET_KPAY_NUMBER ?? '09674646102';
 const WAVE_FALLBACK = import.meta.env.VITE_WALLET_WAVE_NUMBER ?? '09674646102';
 
@@ -177,6 +192,36 @@ export async function fetchPaymentConfig() {
       wave: { number: WAVE_FALLBACK, label: 'Wave Pay' },
     };
   }
+}
+
+export async function fetchSiteSettings(): Promise<SiteSettings> {
+  try {
+    const result = await walletFetch<{ settings: SiteSettings }>('site-settings');
+    return result.settings;
+  } catch {
+    const payment = await fetchPaymentConfig();
+    return {
+      payment,
+      announcement: { text: '', enabled: false },
+      banners: {
+        web: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
+        bet: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
+        hub: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
+        app: { imageUrl: '', linkUrl: '', enabled: false, alt: 'ကြော်ငြာ' },
+      },
+    };
+  }
+}
+
+export async function adminFetchSiteSettings() {
+  return walletFetch<{ settings: SiteSettings }>('admin/site-settings');
+}
+
+export async function adminUpdateSiteSettings(patch: Partial<SiteSettings>) {
+  return walletFetch<{ settings: SiteSettings }>('admin/site-settings', {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
 }
 
 export async function requestPayment(payload: {

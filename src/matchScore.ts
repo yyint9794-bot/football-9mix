@@ -132,9 +132,13 @@ export function isRecentMatchTime(time: string, maxDays = 21) {
   return ageMs >= 0 && ageMs <= maxDays * 24 * 60 * 60 * 1000;
 }
 
+export function isResultDisplayMatch(match: Match) {
+  return hasMatchScore(match) && (isMatchFinished(match) || match.resultFromApi === true);
+}
+
 export function listFinishedMatchesWithScores(matches: Match[]) {
   return matches
-    .filter((match) => isMatchFinished(match) && hasMatchScore(match))
+    .filter((match) => isResultDisplayMatch(match))
     .sort((a, b) => {
       const timeA = parseKickoffTime(a.time)?.getTime() ?? 0;
       const timeB = parseKickoffTime(b.time)?.getTime() ?? 0;

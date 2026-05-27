@@ -16,6 +16,8 @@ import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
 import { UserBetSidebar } from './UserBetSidebar';
 import { MatchResultsPanel } from './MatchResultsPanel';
+import { SiteAnnouncementBar } from './SiteAnnouncementBar';
+import { SitePromoBanner } from './SitePromoBanner';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { UserBetsPanel } from './UserBetsPanel';
 import { UserChangePasswordSheet } from './UserChangePasswordSheet';
@@ -537,7 +539,10 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             </p>
           ) : null}
 
+          <SiteAnnouncementBar />
+
           <div className="bet-odds-body">
+            <SitePromoBanner slot="bet" className="bet-screen-banner" />
             <div className="bet-list">
               {loading ? <p className="bet-loading">API ကြေးဒေတာ ဖတ်နေပါတယ်…</p> : null}
               {error ? <p className="bet-error">{error}</p> : null}
@@ -608,6 +613,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
           />
         ) : null}
 
+        <SiteAnnouncementBar />
+
         <header className="betting-hub-head">
           <button
             type="button"
@@ -632,6 +639,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         </header>
 
         <div className="betting-hub-main">
+          <SitePromoBanner slot="hub" className="bet-hub-banner" />
           <div className="betting-balance-card">
             <div className="betting-balance-top">
               <div className="betting-balance-cell">

@@ -73,6 +73,11 @@ export async function handleWalletRequest(request) {
       return jsonResponse(200, result);
     }
 
+    if (segments[0] === 'site-settings' && request.method === 'GET') {
+      const result = await wallet.walletSiteSettings();
+      return jsonResponse(200, result);
+    }
+
     if (segments[0] === 'transactions' && request.method === 'GET') {
       const result = await wallet.userListTransactions(token);
       return jsonResponse(result.error ? 401 : 200, result);
@@ -110,6 +115,17 @@ export async function handleWalletRequest(request) {
       if (request.method === 'PATCH' && segments[2]) {
         const result = await wallet.adminUpdateUser(token, segments[2], body);
         return jsonResponse(result.error ? 400 : 200, result);
+      }
+    }
+
+    if (segments[0] === 'admin' && segments[1] === 'site-settings') {
+      if (request.method === 'GET') {
+        const result = await wallet.adminGetSiteSettings(token);
+        return jsonResponse(result.error ? 403 : 200, result);
+      }
+      if (request.method === 'PUT' || request.method === 'POST') {
+        const result = await wallet.adminUpdateSiteSettings(token, body);
+        return jsonResponse(result.error ? 403 : 200, result);
       }
     }
 

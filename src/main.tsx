@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RootApp } from './RootApp';
+import { SiteSettingsProvider } from './SiteSettingsProvider';
 import { AuthProvider } from './wallet/AuthContext';
 import './styles.css';
 
@@ -44,7 +45,9 @@ void clearStaleServiceWorkers().finally(() => {
     ReactDOM.createRoot(rootElement).render(
       <React.StrictMode>
         <AuthProvider>
-          <RootApp />
+          <SiteSettingsProvider>
+            <RootApp />
+          </SiteSettingsProvider>
         </AuthProvider>
       </React.StrictMode>,
     );

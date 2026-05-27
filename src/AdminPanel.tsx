@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { AdminSiteSettings } from './AdminSiteSettings';
 import {
   adminCreateUser,
   adminFetchTransactions,
@@ -16,7 +17,7 @@ type AdminPanelProps = {
 };
 
 export function AdminPanel({ onClose, layout = 'modal' }: AdminPanelProps) {
-  const [tab, setTab] = useState<'users' | 'transactions'>('users');
+  const [tab, setTab] = useState<'users' | 'transactions' | 'settings'>('users');
   const [users, setUsers] = useState<WalletUser[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [status, setStatus] = useState('');
@@ -164,11 +165,20 @@ export function AdminPanel({ onClose, layout = 'modal' }: AdminPanelProps) {
           >
             ငွေသွင်း / ငွေထုတ်
           </button>
+          <button
+            type="button"
+            className={tab === 'settings' ? 'active' : ''}
+            onClick={() => setTab('settings')}
+          >
+            ဆက်တင် / ကြော်ငြာ
+          </button>
         </div>
 
         {status ? <p className="account-modal-status admin-status">{status}</p> : null}
 
-        {tab === 'users' ? (
+        {tab === 'settings' ? (
+          <AdminSiteSettings />
+        ) : tab === 'users' ? (
           <div className="admin-section">
             <form className="admin-form-card" onSubmit={handleCreateUser}>
               <strong>အကောင့်အသစ် ဖွင့်ပေးရန်</strong>
