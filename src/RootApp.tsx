@@ -4,7 +4,7 @@ import App from './App';
 import { AdminWebPage } from './AdminWebPage';
 import { AdsenseProvider, isAdsAllowedPath } from './ads';
 import { BetWebPage } from './BetWebPage';
-import { AppUpdateGate } from './mobile/AppUpdateGate';
+import { AppUpdateBanner } from './mobile/AppUpdateBanner';
 import { MobileApp } from './mobile/MobileApp';
 import { isMobileAppPath, mobileTabToPath } from './mobile/mobileNav';
 import { PrivacyPage } from './PrivacyPage';
@@ -34,9 +34,9 @@ export function RootApp() {
   return (
     <AdsenseProvider enabled={adsEnabled}>
       {showMobileShell ? (
-        <AppUpdateGate>
+        <AppUpdateBanner>
           <MobileApp />
-        </AppUpdateGate>
+        </AppUpdateBanner>
       ) : path === '/admin' ? (
         <AdminWebPage />
       ) : path === '/bet' ? (

@@ -15,6 +15,12 @@ if (existsSync(versionJson)) {
   console.log('Copied app-version.json to dist/');
 }
 
+const firebaseConfig = join(root, 'public', 'firebase-config.json');
+if (existsSync(firebaseConfig)) {
+  copyFileSync(firebaseConfig, join(root, 'dist', 'firebase-config.json'));
+  console.log('Copied firebase-config.json to dist/');
+}
+
 // APK ~33MB — Cloudflare Pages per-file limit 25MB (deploy fails if included)
 const apkInDist = join(root, 'dist', 'downloads', '9mix-football.apk');
 if (existsSync(apkInDist)) {

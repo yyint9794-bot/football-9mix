@@ -1,0 +1,27 @@
+{
+  "parameters": {
+    "app_min_version_code": {
+      "defaultValue": { "value": "11" },
+      "description": "ဤ build ထက် နိမ့်ရင် update ပြမည်"
+    },
+    "app_latest_version_code": {
+      "defaultValue": { "value": "11" },
+      "description": "နောက်ဆုံး versionCode"
+    },
+    "app_version_name": {
+      "defaultValue": { "value": "1.3.7" },
+      "description": "ဥပမာ 1.3.7"
+    },
+    "app_download_url": {
+      "defaultValue": { "value": "https://ballpwal.org/apk.html" },
+      "description": "APK ဒေါင်းလုဒ် စာမျက်နှာ သို့မဟုတ် Firebase App Distribution link"
+    },
+    "app_release_notes": {
+      "defaultValue": { "value": "ပွဲစဉ်၊ လောင်းကွင်း ပြင်ဆင်ချက်" }
+    },
+    "app_force_update": {
+      "defaultValue": { "value": "false" },
+      "description": "true = App မသုံးခင် update လုပ်ရမည်"
+    }
+  }
+}
