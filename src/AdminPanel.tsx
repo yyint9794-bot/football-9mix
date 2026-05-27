@@ -12,9 +12,10 @@ import type { WalletTransaction, WalletUser } from './wallet/types';
 
 type AdminPanelProps = {
   onClose: () => void;
+  layout?: 'modal' | 'page';
 };
 
-export function AdminPanel({ onClose }: AdminPanelProps) {
+export function AdminPanel({ onClose, layout = 'modal' }: AdminPanelProps) {
   const [tab, setTab] = useState<'users' | 'transactions'>('users');
   const [users, setUsers] = useState<WalletUser[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -133,13 +134,22 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
+  const shellClass =
+    layout === 'page' ? 'admin-page-shell' : 'video-ad-overlay admin-overlay';
+  const cardClass = layout === 'page' ? 'admin-panel-card admin-panel-page' : 'admin-panel-card';
+
   return (
-    <div className="video-ad-overlay admin-overlay" role="dialog" aria-modal="true" aria-label="Admin panel">
-      <div className="admin-panel-card">
+    <div
+      className={shellClass}
+      role={layout === 'page' ? undefined : 'dialog'}
+      aria-modal={layout === 'page' ? undefined : true}
+      aria-label="Admin panel"
+    >
+      <div className={cardClass}>
         <div className="video-ad-head">
           <span>9Mix Admin</span>
           <button type="button" className="live-close-btn" onClick={onClose}>
-            ပိတ်မည်
+            {layout === 'page' ? 'ပင်မသို့' : 'ပိတ်မည်'}
           </button>
         </div>
 

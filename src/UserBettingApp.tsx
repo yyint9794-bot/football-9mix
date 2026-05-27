@@ -23,6 +23,7 @@ type Screen = 'hub' | 'body-goal' | 'maung' | 'wallet';
 
 type UserBettingAppProps = {
   onClose: () => void;
+  layout?: 'modal' | 'page';
 };
 
 function buildPick(
@@ -44,7 +45,9 @@ function buildPick(
   };
 }
 
-export function UserBettingApp({ onClose }: UserBettingAppProps) {
+export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProps) {
+  const shellClass = layout === 'page' ? 'betting-app-page' : 'betting-app-overlay';
+  const closeLabel = layout === 'page' ? 'ပင်မသို့' : 'ပိတ်မည်';
   const { user, logout, refresh } = useAuth();
   const [screen, setScreen] = useState<Screen>('hub');
   const [matches, setMatches] = useState<Match[]>([]);
@@ -368,7 +371,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
           <span />
         </button>
         <button type="button" className="live-close-btn" onClick={onClose}>
-          ပိတ်မည်
+          {closeLabel}
         </button>
       </div>
     </header>
@@ -376,7 +379,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
 
   if (screen === 'wallet') {
     return (
-      <div className="betting-app-overlay">
+      <div className={shellClass}>
         <div className="betting-app-shell">
           <header className="betting-topbar">
             <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
@@ -384,7 +387,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
             </button>
             <strong>ငွေစာရင်း</strong>
             <button type="button" className="live-close-btn" onClick={onClose}>
-              ပိတ်မည်
+              {closeLabel}
             </button>
           </header>
           <UserWalletPanel />
@@ -396,7 +399,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
   if (screen === 'body-goal' || screen === 'maung') {
     const filterActive = Boolean(leagueFilter && leagueFilter.size < availableLeagues.length);
     return (
-      <div className="betting-app-overlay">
+      <div className={shellClass}>
         <div className="betting-app-shell dark bet-odds-screen">
           {renderBettingTopbar(screen === 'maung' ? 'မောင်း' : 'ဘော်ဒီ/ဂိုးပေါင်း')}
 
@@ -444,7 +447,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
   }
 
   return (
-    <div className="betting-app-overlay">
+    <div className={shellClass}>
       <div className="betting-app-shell hub">
         <header className="betting-hub-head">
           <button type="button" className="menu-button" aria-label="Menu">
@@ -457,7 +460,7 @@ export function UserBettingApp({ onClose }: UserBettingAppProps) {
             <small>{user.displayName}</small>
           </div>
           <button type="button" className="live-close-btn" onClick={onClose}>
-            ပိတ်မည်
+            {closeLabel}
           </button>
         </header>
 

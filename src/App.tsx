@@ -8,8 +8,7 @@ import {
   isOddsClosed,
   resolveLeagueLogoForGroup,
 } from './api';
-import { AccountLoginModal } from './AccountLoginModal';
-import { AdminPanel } from './AdminPanel';
+import { openAdminPage, openBetPage } from './navigation';
 import { useAuth } from './wallet/AuthContext';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
 import {
@@ -236,8 +235,6 @@ function App() {
   const [showVideoAd, setShowVideoAd] = useState(false);
   const [playingMatch, setPlayingMatch] = useState<Match | null>(null);
   const [playSession, setPlaySession] = useState(0);
-  const [showAccountModal, setShowAccountModal] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -408,15 +405,13 @@ function App() {
           </div>
           <div className="top-actions">
             {user?.role === 'admin' ? (
-              <button type="button" className="ghost-button" onClick={() => setShowAdminPanel(true)}>
+              <button type="button" className="ghost-button" onClick={openAdminPage}>
                 Admin
               </button>
             ) : null}
-            {user ? (
-              <button type="button" className="ghost-button" onClick={() => setShowAccountModal(true)}>
-                အကောင့်
-              </button>
-            ) : null}
+            <button type="button" className="ghost-button" onClick={openBetPage}>
+              လောင်းမှု
+            </button>
             <a className="download-button" href="#matches">
               အက်ပ်ဒေါင်းလုဒ်
             </a>
@@ -455,13 +450,23 @@ function App() {
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      setShowAdminPanel(true);
+                      openAdminPage();
                     }}
                   >
                     <span className="menu-live-dot" />
                     Admin Panel
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openBetPage();
+                  }}
+                >
+                  <span className="menu-live-dot" />
+                  9Mix လောင်းမှု
+                </button>
               </div>
             </aside>
           </>
@@ -488,7 +493,7 @@ function App() {
           <FeaturedMatch
             match={featuredMatch}
             loading={loading}
-            onOpenAccount={() => setShowAccountModal(true)}
+            onOpenAccount={openAdminPage}
           />
         </div>
       </section>
@@ -602,7 +607,7 @@ function App() {
                           setPlayingMatch(selectedMatch);
                           setPlaySession((session) => session + 1);
                         }}
-                        onOpenAccount={() => setShowAccountModal(true)}
+                        onOpenAccount={openAdminPage}
                       />
                     ))}
                   </div>
@@ -625,12 +630,10 @@ function App() {
           key={playSession}
           match={playingMatch}
           onClose={() => setPlayingMatch(null)}
-          onOpenAccount={() => setShowAccountModal(true)}
+          onOpenAccount={openAdminPage}
         />
       ) : null}
       {showVideoAd ? <VideoAdModal onClose={() => setShowVideoAd(false)} /> : null}
-      {showAccountModal ? <AccountLoginModal onClose={() => setShowAccountModal(false)} /> : null}
-      {showAdminPanel ? <AdminPanel onClose={() => setShowAdminPanel(false)} /> : null}
       <nav className="bottom-nav" aria-label="အောက်ခြေမီနူး">
         <a href="#home">ပင်မ</a>
         <a href="#matches">လိဂ်များ</a>
