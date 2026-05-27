@@ -1,17 +1,8 @@
-name: Build Android APK
+# အဟောင်း — app-web-release.yml သုံးပါ (workflow_dispatch သာ လက်ရှိထိ)
+name: Build Android APK (legacy)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'android/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'src/**'
-      - 'capacitor.config.ts'
-      - 'public/app-version.json'
-      - 'scripts/write-app-version.mjs'
 
 jobs:
   apk:
@@ -20,46 +11,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-
       - uses: android-actions/setup-android@v3
-
       - run: chmod +x android/gradlew
       - run: npm ci
-      - name: Skip duplicate APK build
-        id: skip
-        run: |
-          if echo "${{ github.event.head_commit.message }}" | grep -q '\[skip apk-build\]'; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
       - run: npm run android:apk
-        if: steps.skip.outputs.skip != 'true'
-      - name: Verify APK size on disk
-        run: |
-          CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
-          APK="public/downloads/9mix-football-v${CODE}.apk"
-          BYTES=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")
-          echo "APK $APK bytes: $BYTES"
-          test "$BYTES" -gt 8000000
-
-      - name: Commit APK and version files
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/*.apk public/app-version.json src/native/publishedVersion.ts src/appDownload.ts functions/_generated/appVersion.mjs android/app/build.gradle
-          if git diff --staged --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-          NEW_CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
-          git commit -m "ci: build APK v${NEW_CODE} [skip apk-build]"
-          git push
+      - run: node scripts/sync-web-download.mjs

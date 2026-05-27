@@ -6,17 +6,7 @@ concurrency:
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'public/app-version.json'
-      - 'public/downloads/**'
-      - 'public/_redirects'
-      - 'public/_headers'
-      - 'src/**'
-      - 'scripts/**'
-      - 'index.html'
-      - 'package.json'
+  # push → app-web-release.yml က APK+Web deploy လုပ်ပေး
 
 jobs:
   deploy-site:

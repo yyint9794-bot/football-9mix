@@ -1,0 +1,80 @@
+# App ပြင်တိုင်း — APK build + Web ဒေါင်းလုဒ် sync + ballpwal.org deploy တစ်ခါတည်း
+name: App + Web release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'remoteconfig.template.json'
+      - 'firebase.json'
+
+concurrency:
+  group: app-web-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: chmod +x android/gradlew
+      - run: npm ci
+
+      - name: Build APK + sync web download files
+        run: |
+          npm run android:apk
+          node scripts/sync-web-download.mjs
+
+      - name: Verify APK
+        run: |
+          CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
+          APK="public/downloads/9mix-football-v${CODE}.apk"
+          BYTES=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")
+          echo "APK $APK bytes: $BYTES"
+          test "$BYTES" -gt 8000000
+
+      - name: Commit APK + web download (GitHub raw)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/*.apk public/_redirects public/apk.html \
+            public/app-version.json public/firebase-config.json \
+            src/native/publishedVersion.ts src/appDownload.ts \
+            functions/_generated/appVersion.mjs android/app/build.gradle
+          if git diff --staged --quiet; then
+            echo "No APK/web changes to commit."
+          else
+            CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
+            git commit -m "release: app v${CODE} + web APK download"
+            git push
+          fi
+
+      - name: Deploy site to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=football-9mix

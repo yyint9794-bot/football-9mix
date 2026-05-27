@@ -1,7 +1,7 @@
 /**
- * App + Web တစ်ခါတည်း — build.gradle versionCode မြှင့်ပြီး:
- *   npm run release
- * GitHub push → CI က APK + ballpwal.org deploy လုပ်ပေး
+ * App + Web တစ်ခါတည်း:
+ *   npm run release        — build APK, web download sync, push (CI deploy)
+ *   npm run release:bump   — versionCode +1 ပြီးမှ release
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -51,25 +51,38 @@ const { versionCode, versionName } = readVersion();
 console.log('=== 9Mix release (App + Web download အော်တို) ===');
 console.log(`Target: v${versionName} (build ${versionCode})\n`);
 
-console.log('① Build APK + sync app-version.json, web download…\n');
+console.log('① APK build + app-version + web download (apk.html, _redirects)…\n');
 const apkStatus = run('npm', ['run', 'android:apk']);
 if (apkStatus !== 0) {
   console.warn(
-    '\n⚠ APK build မအောင်မြင်ပါ (Java/Android SDK). Version ဖိုင်တွေသာ sync လုပ်မယ် — push ပြီးရင် GitHub Actions က APK build လုပ်ပေးမည်.\n',
+    '\n⚠ APK build မအောင်မြင်ပါ (Java/Android SDK).\n' +
+      '  Version + web link သာ sync — push ပြီးရင် GitHub Actions က APK+Web တင်ပေး.\n',
   );
-  if (run('node', ['scripts/write-app-version.mjs']) !== 0) process.exit(1);
+  run('node', ['scripts/write-app-version.mjs']);
+  run('node', ['scripts/sync-web-download.mjs']);
 }
 
 const syncFiles = [
+  'android/app/build.gradle',
   'public/app-version.json',
+  'public/firebase-config.json',
+  'public/_redirects',
+  'public/apk.html',
   'src/native/publishedVersion.ts',
   'src/appDownload.ts',
   'functions/_generated/appVersion.mjs',
 ];
-const apkPath = 'public/downloads/9mix-football.apk';
-if (existsSync(join(root, apkPath))) syncFiles.unshift(apkPath);
 
-run('git', ['add', ...syncFiles, 'android/app/build.gradle']);
+const downloadsDir = join(root, 'public', 'downloads');
+if (existsSync(join(downloadsDir, '9mix-football.apk'))) {
+  syncFiles.unshift('public/downloads/9mix-football.apk');
+}
+const versionedApk = `public/downloads/9mix-football-v${versionCode}.apk`;
+if (existsSync(join(root, versionedApk))) {
+  syncFiles.unshift(versionedApk);
+}
+
+run('git', ['add', ...syncFiles]);
 
 if (run('git', ['diff', '--staged', '--quiet']) === 0) {
   console.log('\nပြောင်းလဲမှု မရှိ — ရှိပြီးသား sync ဖြစ်နေပါတယ်.');
@@ -87,5 +100,5 @@ if (process.env.SKIP_PUSH === '1') {
   process.exit(0);
 }
 
-console.log('\n③ push → GitHub Actions က Web + APK တင်ပေး (လက်ဖြင့် Web upload မလို)\n');
+console.log('\n③ git push → GitHub Actions: APK + Web (ballpwal.org) တစ်ခါတည်း deploy\n');
 process.exit(run('git', ['push', 'origin', 'main']));

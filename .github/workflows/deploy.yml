@@ -2,17 +2,7 @@ name: Deploy site and APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'android/**'
-      - 'public/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'capacitor.config.ts'
-      - '.github/workflows/deploy.yml'
+  # push → app-web-release.yml
 
 concurrency:
   group: deploy-apk

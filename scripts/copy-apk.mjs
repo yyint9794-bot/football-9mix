@@ -38,3 +38,4 @@ copyFileSync(source, versioned);
 console.log(`Copied ${source} -> ${latest}`);
 console.log(`Copied ${source} -> ${versioned}`);
 spawnSync(process.execPath, [join(root, 'scripts', 'write-app-version.mjs')], { stdio: 'inherit' });
+spawnSync(process.execPath, [join(root, 'scripts', 'sync-web-download.mjs')], { stdio: 'inherit' });
