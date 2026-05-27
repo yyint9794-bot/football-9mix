@@ -8,7 +8,9 @@ import {
   isOddsClosed,
   resolveLeagueLogoForGroup,
 } from './api';
-import { openBetPage } from './navigation';
+import { shouldDownloadApkFile, APP_APK_URL } from './appDownload';
+import { DownloadAppButton } from './DownloadAppButton';
+import { openBetPage, openMobileApp } from './navigation';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
 import {
   extractMyanmarOdds,
@@ -397,9 +399,7 @@ function App() {
             </div>
           </div>
           <div className="top-actions">
-            <a className="download-button" href="#matches">
-              အက်ပ်ဒေါင်းလုဒ်
-            </a>
+            <DownloadAppButton />
             <a className="ghost-button" href="#matches">
               ပွဲများကြည့်ရန်
             </a>
@@ -440,6 +440,20 @@ function App() {
                   <span className="menu-live-dot" />
                   9Mix လောင်းမှု
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (shouldDownloadApkFile()) {
+                      window.location.href = APP_APK_URL;
+                      return;
+                    }
+                    openMobileApp();
+                  }}
+                >
+                  <span className="menu-live-dot" />
+                  အက်ပ်ဒေါင်းလုဒ်
+                </button>
               </div>
             </aside>
           </>
@@ -454,8 +468,9 @@ function App() {
               တိုက်ရိုက်လောင်းနိုင်ပါသည်။
             </p>
             <div className="hero-actions">
-              <a className="primary-button" href="#matches">
-                စတင်ကြည့်မယ်
+              <DownloadAppButton className="primary-button download-hero-btn" />
+              <a className="ghost-button hero-secondary" href="#matches">
+                ပွဲများကြည့်ရန်
               </a>
               <span className="status-pill">
                 {loading ? 'ပွဲစဉ်များ ယူနေသည်...' : `${matches.length} ပွဲ ပြသထားသည်`}
@@ -612,7 +627,22 @@ function App() {
           ဤ site တွင် Google AdSense ကြော်ငြာများ ပြသနိုင်ပါသည် — ဝင်ရောက်ကြည့်ရှုသူ များလာလေ
           ဝင်ငွေ တိုးလာနိုင်ပါသည်။
         </p>
-        <a href="/privacy">ကိုယ်ရေးအချက်အလက် မူဝါဒ</a>
+        <div className="site-footer-links">
+          <button
+            type="button"
+            className="site-footer-app-btn"
+            onClick={() => {
+              if (shouldDownloadApkFile()) {
+                window.location.href = APP_APK_URL;
+                return;
+              }
+              openMobileApp();
+            }}
+          >
+            📱 {shouldDownloadApkFile() ? 'APK ဒေါင်းလုဒ်' : 'Mobile App ဖွင့်မည်'}
+          </button>
+          <a href="/privacy">ကိုယ်ရေးအချက်အလက် မူဝါဒ</a>
+        </div>
       </footer>
 
       <nav className="bottom-nav" aria-label="အောက်ခြေမီနူး">

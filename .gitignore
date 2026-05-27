@@ -6,3 +6,7 @@ data/wallet-db.json
 vite.config.js
 *.tsbuildinfo
 .DS_Store
+
+# APK build output (upload to public/downloads after `npm run android:apk` or CI artifact)
+public/downloads/*.apk
+!public/downloads/README.md

@@ -10,6 +10,10 @@ export function openHomePage() {
   window.location.href = '/';
 }
 
+export function openMobileApp() {
+  window.location.href = '/app';
+}
+
 export function getAppPath() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   return path;

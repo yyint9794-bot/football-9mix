@@ -1,0 +1,19 @@
+{
+  "name": "9Mix Football",
+  "short_name": "9Mix",
+  "description": "ဖုန်းအတွက် ဘောလုံး ပွဲစဉ်၊ တိုက်ရိုက်ကြည့်ရှု၊ 9Mix လောင်းမှု",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "background_color": "#060b14",
+  "theme_color": "#22c55e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

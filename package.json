@@ -8,12 +8,17 @@
     "phone": "node scripts/phone-url.mjs",
     "share": "node scripts/share-phone.mjs",
     "phone:share": "node scripts/phone-share.mjs",
-    "build": "vite build",
+    "build": "vite build && node scripts/postbuild-mobile.mjs",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:apk": "npm run android:sync && node scripts/run-gradle.mjs && node scripts/copy-apk.mjs",
+    "android:open": "npx cap open android",
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0",
     "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "@vitejs/plugin-react": "^4.5.2",
     "hls.js": "^1.6.16",
     "react": "^19.2.6",
@@ -22,6 +27,7 @@
     "vite": "^6.3.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3"

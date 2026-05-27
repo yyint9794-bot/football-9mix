@@ -24,7 +24,13 @@ export function isAdsEnabled() {
 /** Betting / admin screens — no ads (AdSense policy + UX). */
 export function isAdsAllowedPath(path: string) {
   const normalized = path.replace(/\/+$/, '') || '/';
-  return normalized !== '/bet' && normalized !== '/admin';
+  if (normalized === '/bet' || normalized === '/admin') {
+    return false;
+  }
+  if (normalized === '/app' || normalized.startsWith('/app/')) {
+    return false;
+  }
+  return true;
 }
 
 export function isSlotConfigured(slot: string) {
