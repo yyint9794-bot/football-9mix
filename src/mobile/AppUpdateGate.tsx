@@ -110,15 +110,27 @@ export function AppUpdateGate({ children }: AppUpdateGateProps) {
           installedName: versionLabel,
         });
       } catch {
-        if (!cancelled) {
-          setGate('check-failed');
-          writeGateCache({
-            gate: 'check-failed',
-            latest: null,
-            installedCode: 0,
-            installedName: '',
-          });
+        if (cancelled) {
+          return;
         }
+
+        const previous = readGateCache();
+        if (previous?.gate === 'blocked' && previous.latest) {
+          setLatest(previous.latest);
+          setInstalledCode(previous.installedCode);
+          setInstalledName(previous.installedName);
+          setGate('blocked');
+          return;
+        }
+
+        // Site မရရင် APK ထဲက UI သုံးခွင့် (အင်တာနက် ပြန်ရရင် update စစ်)
+        setGate('ready');
+        writeGateCache({
+          gate: 'ready',
+          latest: null,
+          installedCode: 0,
+          installedName: '',
+        });
       }
     };
 
