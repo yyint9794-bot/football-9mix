@@ -692,6 +692,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               <b>ဒေတာပြန်လည်ရယူ</b>
             </button>
           </div>
+
+          <div className="betting-hub-deco" aria-hidden />
         </div>
 
       </div>
