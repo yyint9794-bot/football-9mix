@@ -9,7 +9,6 @@ import {
   resolveLeagueLogoForGroup,
 } from './api';
 import { openBetPage } from './navigation';
-import { useAuth } from './wallet/AuthContext';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
 import {
   extractMyanmarOdds,
@@ -223,7 +222,6 @@ declare global {
 }
 
 function App() {
-  const { user } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
