@@ -1,3 +1,5 @@
+/ads.txt   /ads.txt        200
+/privacy   /index.html     200
 /assets/*  /assets/:splat  200
 /images/*  /images/:splat  200
 /*.js      /:splat         200

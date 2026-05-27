@@ -919,6 +919,93 @@ a {
   z-index: 1;
 }
 
+.ad-card.dark {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
+.ad-card.dark span,
+.ad-card.dark .ad-label {
+  color: #4ade80;
+}
+
+.ad-card.dark strong {
+  color: #e2e8f0;
+}
+
+.ad-card.dark small {
+  color: #94a3b8;
+}
+
+.ad-card.compact.dark {
+  padding: 10px 12px;
+}
+
+.betting-hub-ad,
+.bet-odds-ad,
+.payment-ad {
+  flex-shrink: 0;
+}
+
+.live-player-ad {
+  margin-top: 10px;
+}
+
+.site-footer {
+  margin: 16px 14px 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.site-footer a {
+  color: #4ade80;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.legal-page {
+  min-height: 100vh;
+  padding: 16px 16px 32px;
+  background: #07111f;
+  color: #e2e8f0;
+}
+
+.legal-head h1 {
+  margin: 8px 0 0;
+  font-size: 1.35rem;
+}
+
+.legal-body {
+  margin-top: 20px;
+  line-height: 1.65;
+  font-size: 0.92rem;
+}
+
+.legal-body h2 {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+  color: #4ade80;
+}
+
+.legal-body ul {
+  padding-left: 20px;
+}
+
+.legal-body a {
+  color: #4ade80;
+}
+
 .video-ad-overlay {
   position: fixed;
   inset: 0;

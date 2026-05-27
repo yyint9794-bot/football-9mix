@@ -20,6 +20,7 @@ import { parseKickoffTime } from './liveMatch';
 import { formatMatchScore, hasMatchScore, isMatchFinished } from './matchScore';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { preloadMatchLogos } from './teamLogoIndex';
+import { AdBanner, AD_SLOTS, VIDEO_AD_URL, resolveAdSlot } from './ads';
 import { LeagueLogo, TeamLogo } from './TeamLogo';
 import type { Match } from './types';
 
@@ -28,13 +29,6 @@ type Filter = (typeof filters)[number];
 import type { OddsSection } from './betting/types';
 
 const ALL_LEAGUES = 'လိဂ်အားလုံး';
-const ADSENSE_CLIENT = import.meta.env.VITE_ADSENSE_CLIENT ?? '';
-const AD_SLOTS = {
-  top: import.meta.env.VITE_ADSENSE_SLOT_TOP ?? '',
-  inline: import.meta.env.VITE_ADSENSE_SLOT_INLINE ?? '',
-  bottom: import.meta.env.VITE_ADSENSE_SLOT_BOTTOM ?? '',
-};
-const VIDEO_AD_URL = import.meta.env.VITE_VIDEO_AD_URL ?? '';
 const TELEGRAM_URL = import.meta.env.VITE_TELEGRAM_URL ?? 'https://t.me/livefootball902';
 const priorityLeagues = [
   ['world cup', 'fifa world cup', 'fifa wc', 'wc'],
@@ -207,12 +201,6 @@ function compareFeaturedMatches(a: Match, b: Match) {
   const oddsDiff = Number(extractMyanmarOdds(b).length > 0) - Number(extractMyanmarOdds(a).length > 0);
 
   return liveDiff || streamDiff || oddsDiff || String(a.time).localeCompare(String(b.time));
-}
-
-declare global {
-  interface Window {
-    adsbygoogle?: unknown[];
-  }
 }
 
 function App() {
@@ -619,6 +607,14 @@ function App() {
         />
       ) : null}
       {showVideoAd ? <VideoAdModal onClose={() => setShowVideoAd(false)} /> : null}
+      <footer className="site-footer">
+        <p>
+          ဤ site တွင် Google AdSense ကြော်ငြာများ ပြသနိုင်ပါသည် — ဝင်ရောက်ကြည့်ရှုသူ များလာလေ
+          ဝင်ငွေ တိုးလာနိုင်ပါသည်။
+        </p>
+        <a href="/privacy">ကိုယ်ရေးအချက်အလက် မူဝါဒ</a>
+      </footer>
+
       <nav className="bottom-nav" aria-label="အောက်ခြေမီနူး">
         <a href="#home">ပင်မ</a>
         <a href="#matches">လိဂ်များ</a>
@@ -697,54 +693,16 @@ function LivePlayerModal({
           <MatchScoreBadge match={match} showHalfTime className="match-score-badge live" />
         </div>
         <LiveStreamPlayer match={match} />
+        <AdBanner
+          slot={resolveAdSlot('live', 'inline')}
+          label="ကြော်ငြာ"
+          compact
+          variant="dark"
+          className="live-player-ad"
+        />
         <MatchOdds match={match} compact onBetClick={onOpenAccount} />
       </div>
     </div>
-  );
-}
-
-function AdBanner({ label, slot, compact = false }: { label: string; slot: string; compact?: boolean }) {
-  useEffect(() => {
-    if (!ADSENSE_CLIENT || !slot) {
-      return;
-    }
-
-    const scriptId = 'adsense-script';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
-      document.head.appendChild(script);
-    }
-
-    window.adsbygoogle = window.adsbygoogle ?? [];
-    window.adsbygoogle.push({});
-  }, [slot]);
-
-  if (!ADSENSE_CLIENT || !slot) {
-    return (
-      <aside className={compact ? 'ad-card compact' : 'ad-card'}>
-        <span>{label}</span>
-        <strong>ကြော်ငြာနေရာ</strong>
-        <small>AdSense ID ထည့်ပြီးနောက် ကြော်ငြာများပြပါမည်</small>
-      </aside>
-    );
-  }
-
-  return (
-    <aside className={compact ? 'ad-card compact live-card' : 'ad-card live-card'}>
-      <span>{label}</span>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client={ADSENSE_CLIENT}
-        data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </aside>
   );
 }
 

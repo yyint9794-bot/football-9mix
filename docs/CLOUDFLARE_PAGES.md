@@ -29,6 +29,16 @@ Repo ကို Git hosting ပေါ် တင်ထားပါ။
 | `STREAM_REFERER` | `https://ballpwal.org/` |
 | `WALLET_ADMIN_USER` | `admin` |
 | `WALLET_ADMIN_PASS` | strong password (change default) |
+| `VITE_ADSENSE_CLIENT` | `ca-pub-...` (optional — see [docs/ADS.md](ADS.md)) |
+| `VITE_ADSENSE_SLOT_TOP` | Ad unit slot ID |
+| `VITE_ADSENSE_SLOT_INLINE` | Ad unit slot ID |
+| `VITE_ADSENSE_SLOT_BOTTOM` | Ad unit slot ID |
+| `VITE_ADSENSE_SLOT_BET` | 9Mix screens (optional) |
+| `VITE_ADSENSE_SLOT_PAYMENT` | Deposit/withdraw (optional) |
+| `VITE_ADSENSE_SLOT_LIVE` | Live player (optional) |
+| `VITE_VIDEO_AD_URL` | Optional MP4 pre-roll ad |
+
+ကြော်ငြာ setup အသေးစိတ်: **[docs/ADS.md](ADS.md)** — `public/ads.txt` ကိုလည်း AdSense မှ ထည့်ပါ။
 
 5. **Save and Deploy**
 

@@ -22,15 +22,7 @@ VITE_HTAY_ODDS_FALLBACK_VERSIONS=v1,v2
 
 ## Ads
 
-Set these values in `.env` after your ad network account is approved:
-
-```bash
-VITE_ADSENSE_CLIENT=ca-pub-your-publisher-id
-VITE_ADSENSE_SLOT_TOP=your-top-slot-id
-VITE_ADSENSE_SLOT_INLINE=your-inline-slot-id
-VITE_ADSENSE_SLOT_BOTTOM=your-bottom-slot-id
-VITE_VIDEO_AD_URL=https://example.com/video-ad.mp4
-```
+Google AdSense slots are wired on the main site, 9Mix betting hub, payment screens, and live player. Copy `.env.example` → `.env` and see **[docs/ADS.md](docs/ADS.md)** for `ads.txt`, slot IDs, and Cloudflare env vars.
 
 ## Deploy (Cloudflare Pages + ballpwal.org)
 
