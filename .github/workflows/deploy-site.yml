@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - 'public/app-version.json'
+      - 'public/downloads/**'
       - 'public/_redirects'
       - 'public/_headers'
       - 'src/**'
@@ -19,7 +20,7 @@ on:
 
 jobs:
   verify-and-hint:
-    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip apk-build]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,9 +37,11 @@ jobs:
         run: |
           node -e "
           const fs = require('fs');
+          const gradle = fs.readFileSync('android/app/build.gradle','utf8');
+          const min = Number(/versionCode\\s+(\\d+)/.exec(gradle)?.[1] ?? 0);
           const j = JSON.parse(fs.readFileSync('dist/app-version.json','utf8'));
-          console.log('dist app-version:', j.versionCode, j.versionName);
-          if (j.versionCode < 7) process.exit(1);
+          console.log('dist app-version:', j.versionCode, j.versionName, '(gradle min', min + ')');
+          if (j.versionCode < min) { console.error('dist version behind build.gradle'); process.exit(1); }
           "
 
       - name: Deploy to Cloudflare Pages

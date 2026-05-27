@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   release:
-    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip apk-build]')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,13 +53,13 @@ jobs:
             echo "Refuse to downgrade app version $OLD_CODE -> $NEW_CODE"
             exit 1
           fi
-          git add public/downloads/9mix-football.apk public/app-version.json src/appDownload.ts functions/_generated/appVersion.mjs
+          git add public/downloads/9mix-football.apk public/app-version.json src/native/publishedVersion.ts src/appDownload.ts functions/_generated/appVersion.mjs
           if git diff --staged --quiet; then
             echo "No APK or version file changes to commit."
-            exit 0
+          else
+            git commit -m "ci: sync APK v${NEW_CODE} and web download [skip apk-build]"
+            git push
           fi
-          git commit -m "ci: sync APK v${NEW_CODE} and web download [skip ci]"
-          git push
 
       - name: Deploy to Cloudflare Pages
         if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}

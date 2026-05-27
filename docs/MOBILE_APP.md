@@ -21,23 +21,24 @@ Web (`/`) နဲ့ **မတူဘဲ** သီးခြား mobile UI — **`/
 
 Web ပင်မ **「အက်ပ်ဒေါင်းလုဒ်」** — Android ဖုန်းမှာ **APK** ဒေါင်းပြီး install လုပ်နိုင်သည် (Mobile App `/app` နဲ့ တူသည်)။
 
-### Build (PC မှာ Android Studio / JDK လိုသည်)
+### App update + Web ဒေါင်းလုဒ် (တစ်ခါတည်း — လက်ဖြင့် Web upload **မလို**)
+
+1. `android/app/build.gradle` ထဲ `versionCode` ကို **+1** မြှင့်ပါ (သို့မဟုတ် အောက်က `--bump` သုံး)
+2. တစ်ကြောင်းတည်း:
 
 ```bash
-npm install
-npm run android:apk
+npm run release
 ```
 
-APK ထွက်မည်: `public/downloads/9mix-football.apk`
-
-Deploy:
+သို့မဟုတ် version အလိုအလျောက် မြှင့်ပြီး push:
 
 ```bash
-git add public/downloads/9mix-football.apk
-git push
+npm run release:bump
 ```
 
-သို့မဟုတ် `npm run build` (APK ရှိရင် `dist/downloads/` သို့ copy)
+ဒါက APK + `app-version.json` + site download ကို commit/push လုပ်ပြီး **GitHub Actions** က `ballpwal.org` ကို deploy လုပ်ပေးပါတယ်။
+
+PC မှာ Java မရှိရင် `npm run release` မှာပဲ version ဖိုင်တွေ sync ဖြစ်ပြီး push ပြီးရင် CI က APK build လုပ်ပေးမည်။
 
 ### Play Store မဟုတ် — direct APK
 

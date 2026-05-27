@@ -1,13 +1,11 @@
 # APK download
 
-File served at: `https://ballpwal.org/downloads/9mix-football.apk`
+`https://ballpwal.org/downloads/9mix-football.apk`
 
-Build locally:
+**လက်ဖြင့် upload မလို** — `build.gradle` မှာ `versionCode` မြှင့်ပြီး:
 
 ```bash
-npm install
-npm run android:apk
-npm run build
+npm run release
 ```
 
-Then deploy (APK is copied into `dist/downloads/` on build).
+GitHub Actions က APK + site deploy အော်တို လုပ်ပေးသည်။

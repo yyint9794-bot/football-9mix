@@ -24,6 +24,16 @@ VITE_HTAY_ODDS_FALLBACK_VERSIONS=v1,v2
 
 Google AdSense slots are wired on the main site, 9Mix betting hub, payment screens, and live player. Copy `.env.example` → `.env` and see **[docs/ADS.md](docs/ADS.md)** for `ads.txt`, slot IDs, and Cloudflare env vars.
 
+## App release (APK + Web download — တစ်ခါတည်း)
+
+`android/app/build.gradle` → `versionCode` +1, ပြီးရင်:
+
+```bash
+npm run release
+```
+
+သို့မဟုတ် `npm run release:bump` (version auto + push). Web မှာ APK သီးခြား upload **မလို** — CI deploy လုပ်ပေး။
+
 ## Deploy (Cloudflare Pages + ballpwal.org)
 
 Production deploy guide: **[docs/CLOUDFLARE_PAGES.md](docs/CLOUDFLARE_PAGES.md)**
