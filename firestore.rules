@@ -9,7 +9,10 @@ service cloud.firestore {
         && request.resource.data.text.size() <= 400
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
-        && request.resource.data.displayName.size() <= 24;
+        && request.resource.data.displayName.size() <= 24
+        && request.resource.data.userId is string
+        && request.resource.data.userId.size() > 0
+        && request.resource.data.createdAt is number;
       allow update, delete: if false;
     }
   }

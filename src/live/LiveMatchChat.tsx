@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Match } from '../types';
 import {
   getChatDisplayName,
+  getChatUserId,
   getMatchChatRoomId,
   sendLiveChatMessage,
   subscribeLiveChat,
@@ -44,12 +45,30 @@ export function LiveMatchChat({ match }: LiveMatchChatProps) {
     if (!trimmed) {
       return;
     }
+    const displayName = name.trim().slice(0, 24) || 'Guest';
+    const optimisticId = `local-${Date.now()}`;
+    const optimistic: LiveChatMessage = {
+      id: optimisticId,
+      roomId,
+      userId: getChatUserId(),
+      displayName,
+      text: trimmed,
+      createdAt: Date.now(),
+    };
+
     setSending(true);
     setError('');
+    setMessages((prev) => [...prev, optimistic]);
+    setText('');
+
     try {
-      await sendLiveChatMessage(roomId, trimmed, name || 'Guest');
-      setText('');
+      const createdAt = await sendLiveChatMessage(roomId, trimmed, displayName);
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === optimisticId ? { ...msg, createdAt } : msg)),
+      );
     } catch (err) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setText(trimmed);
       setError(err instanceof Error ? err.message : 'ပို့၍ မရပါ');
     } finally {
       setSending(false);

@@ -3,11 +3,11 @@ import {
   collection,
   limit,
   onSnapshot,
-  orderBy,
   query,
-  serverTimestamp,
   type Timestamp,
 } from 'firebase/firestore';
+import { extractFixtureId } from '../matchExtras';
+import { getMatchDateKey } from '../matchUi';
 import type { Match } from '../types';
 import { getLiveFirestore } from './firebaseLive';
 
@@ -23,14 +23,40 @@ export type LiveChatMessage = {
 const NAME_KEY = 'ballpwal-chat-display-name';
 const USER_KEY = 'ballpwal-chat-user-id';
 
+function slugTeam(name: string) {
+  return (
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\u1000-\u109f]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 32) || 'team'
+  );
+}
+
+/** App/Web တစ်ခုတည်း room — stream fixture id သို့မဟုတ်င်းအမည်+ရက်စွဲ */
 export function getMatchChatRoomId(match: Match) {
-  const id = String(match.id || '').trim();
-  if (id) {
-    return `match-${id}`;
+  const fixture = extractFixtureId(match);
+  if (fixture) {
+    return `fixture-${fixture}`;
   }
-  const home = String(match.homeTeam?.name || 'home').slice(0, 24);
-  const away = String(match.awayTeam?.name || 'away').slice(0, 24);
-  return `match-${home}-${away}`.replace(/\s+/g, '-').toLowerCase();
+
+  for (const raw of [match.id, match.matchId, match.fixture_id]) {
+    const id = String(raw ?? '').trim();
+    if (!id || id === '0' || id === 'undefined') {
+      continue;
+    }
+    const numeric = id.match(/(\d{4,})/)?.[1];
+    if (numeric) {
+      return `fixture-${numeric}`;
+    }
+    return `id-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48)}`;
+  }
+
+  const home = slugTeam(String(match.homeTeam?.name || 'home'));
+  const away = slugTeam(String(match.awayTeam?.name || 'away'));
+  const day = getMatchDateKey(match);
+  return `teams-${home}-${away}-${day}`;
 }
 
 export function getChatUserId() {
@@ -76,29 +102,36 @@ function tsToMs(value: Timestamp | number | null | undefined) {
   return value.toMillis?.() ?? Date.now();
 }
 
+function sortMessages(list: LiveChatMessage[]) {
+  return [...list].sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+}
+
 export function subscribeLiveChat(
   roomId: string,
   onMessages: (messages: LiveChatMessage[]) => void,
   onError?: (message: string) => void,
 ) {
+  let cancelled = false;
   let unsubscribe = () => {};
 
   void (async () => {
     const firestore = await getLiveFirestore();
+    if (cancelled) {
+      return;
+    }
     if (!firestore) {
       onError?.('Chat မရသေးပါ — Firebase config စစ်ပါ');
       return;
     }
 
-    const q = query(
-      collection(firestore, 'live_rooms', roomId, 'messages'),
-      orderBy('createdAt', 'asc'),
-      limit(200),
-    );
+    const q = query(collection(firestore, 'live_rooms', roomId, 'messages'), limit(200));
 
     unsubscribe = onSnapshot(
       q,
       (snap) => {
+        if (cancelled) {
+          return;
+        }
         const list: LiveChatMessage[] = snap.docs.map((doc) => {
           const data = doc.data();
           return {
@@ -110,18 +143,27 @@ export function subscribeLiveChat(
             createdAt: tsToMs(data.createdAt as Timestamp | number),
           };
         });
-        onMessages(list);
+        onMessages(sortMessages(list));
       },
       (err) => {
-        onError?.(err.message || 'Chat ချိတ်ဆက်မှု မအောင်မြင်ပါ');
+        if (!cancelled) {
+          onError?.(err.message || 'Chat ချိတ်ဆက်မှု မအောင်မြင်ပါ');
+        }
       },
     );
   })();
 
-  return () => unsubscribe();
+  return () => {
+    cancelled = true;
+    unsubscribe();
+  };
 }
 
-export async function sendLiveChatMessage(roomId: string, text: string, displayName: string) {
+export async function sendLiveChatMessage(
+  roomId: string,
+  text: string,
+  displayName: string,
+): Promise<number> {
   const trimmed = text.trim();
   if (!trimmed || trimmed.length > 400) {
     throw new Error('စာသား မမှန်ပါ');
@@ -135,10 +177,12 @@ export async function sendLiveChatMessage(roomId: string, text: string, displayN
   const name = displayName.trim().slice(0, 24) || 'Guest';
   saveChatDisplayName(name);
 
+  const createdAt = Date.now();
   await addDoc(collection(firestore, 'live_rooms', roomId, 'messages'), {
     userId: getChatUserId(),
     displayName: name,
     text: trimmed,
-    createdAt: serverTimestamp(),
+    createdAt,
   });
+  return createdAt;
 }

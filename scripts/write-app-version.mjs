@@ -19,7 +19,7 @@ const payload = {
   apkUrl,
   apkUrlSite: apkUrl,
   apkUrlCdn: apkUrl,
-  releaseNotes: 'ဒေတာ၊ တိုက်ရိုက်ကြည့်၊ Live Chat၊ Update ပြင်ဆင်ချက်',
+  releaseNotes: 'Live Chat ချက်ချင်း မြင်ရမည်၊ Update v12',
 };
 
 const outPath = join(root, 'public', 'app-version.json');
