@@ -10,10 +10,12 @@
   --m-tab-h: 58px;
   --m-safe-t: env(safe-area-inset-top, 0px);
   --m-safe-b: env(safe-area-inset-bottom, 0px);
+  --m-top-pad: max(28px, calc(var(--m-safe-t) + 12px));
 
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--m-safe-t);
   background:
     radial-gradient(ellipse 120% 80% at 50% -20%, rgba(34, 197, 94, 0.18), transparent 55%),
     var(--m-bg);
@@ -89,7 +91,7 @@
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 12px 14px calc(var(--m-tab-h) + var(--m-safe-b) + 12px);
+  padding: var(--m-top-pad) 14px calc(var(--m-tab-h) + var(--m-safe-b) + 12px);
 }
 
 .m-screen-lead {
@@ -380,7 +382,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: max(12px, var(--m-safe-t)) 14px 12px;
+  padding: var(--m-top-pad) 14px 12px;
   background: rgba(0, 0, 0, 0.92);
   position: sticky;
   top: 0;

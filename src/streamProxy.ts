@@ -1,7 +1,10 @@
+import { remoteApiOrigin } from './remoteApiOrigin';
+
 export function proxiedStreamUrl(url: string) {
   if (!url || !url.startsWith('http')) {
     return '';
   }
 
-  return `/api/hls-proxy?url=${encodeURIComponent(url)}`;
+  const origin = remoteApiOrigin();
+  return `${origin}/api/hls-proxy?url=${encodeURIComponent(url)}`;
 }

@@ -1,3 +1,5 @@
+import { remoteApiOrigin } from './remoteApiOrigin';
+
 const PROXY_HOSTS =
   /(?:sta\.vnres\.co|assets\.b365api\.com|upload\.wikimedia\.org|wikipedia\.org)/i;
 
@@ -40,7 +42,7 @@ export function buildTeamLogoSources(rawUrl: string) {
   const sources: string[] = [];
 
   if (PROXY_HOSTS.test(rawUrl)) {
-    sources.push(`/api/team-logo?url=${encodeURIComponent(rawUrl)}`);
+    sources.push(`${remoteApiOrigin()}/api/team-logo?url=${encodeURIComponent(rawUrl)}`);
   }
 
   sources.push(rawUrl);

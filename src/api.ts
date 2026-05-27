@@ -854,7 +854,12 @@ export async function getFootballMatches(
   signal?: AbortSignal,
   onUpdate?: (matches: Match[]) => void,
 ): Promise<Match[]> {
-  let matches = enrichMatchesWithLogos(await fetchMatches(PRIMARY_VERSION, signal));
+  let matches: Match[] = [];
+  try {
+    matches = enrichMatchesWithLogos(await fetchMatches(PRIMARY_VERSION, signal));
+  } catch {
+    // Htay API မရရင် MMK fallback များဖြင့် ဆက်ယူ
+  }
   onUpdate?.(matches);
 
   const fallbackResults = await Promise.allSettled(MMK_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)));
