@@ -74,6 +74,21 @@ export async function handleWalletRequest(request) {
       return jsonResponse(result.error ? 400 : 200, result);
     }
 
+    if (segments[0] === 'bets' && segments[1] === 'settle' && request.method === 'POST') {
+      const result = await wallet.walletSettleBets(token, Array.isArray(body.matches) ? body.matches : []);
+      return jsonResponse(result.error ? 401 : 200, result);
+    }
+
+    if (segments[0] === 'bets' && request.method === 'POST') {
+      const result = await wallet.walletPlaceBet(token, body);
+      return jsonResponse(result.error ? 400 : 200, result);
+    }
+
+    if (segments[0] === 'bets' && request.method === 'GET') {
+      const result = await wallet.walletListBets(token, url.searchParams.get('status') || 'all');
+      return jsonResponse(result.error ? 401 : 200, result);
+    }
+
     if (segments[0] === 'admin' && segments[1] === 'users') {
       if (request.method === 'GET' && segments.length === 2) {
         const result = await wallet.adminListUsers(token);

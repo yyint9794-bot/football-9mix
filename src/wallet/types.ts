@@ -9,6 +9,30 @@ export type WalletUser = {
   termsAccepted: boolean;
 };
 
+export type WalletBetPick = {
+  matchId: string;
+  league: string;
+  homeName: string;
+  awayName: string;
+  side: string;
+  oddsLabel: string;
+  summary: string;
+  goalLine?: number;
+};
+
+export type WalletBet = {
+  id: string;
+  userId: string;
+  type: 'maung' | 'body';
+  stake: number;
+  payoutMultiplier: number;
+  picks: WalletBetPick[];
+  status: 'pending' | 'won' | 'lost';
+  payout: number;
+  createdAt: string;
+  settledAt: string | null;
+};
+
 export type WalletTransaction = {
   id: string;
   userId: string;

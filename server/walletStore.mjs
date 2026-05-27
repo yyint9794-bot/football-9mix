@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { normalizeDb, parseMultiplier, settleUserBets } from './betSettlement.mjs';
 import { readDb, writeDb } from './walletStorage.mjs';
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -341,6 +342,134 @@ export async function userListTransactions(token) {
   const db = await readDb();
   const rows = db.transactions.filter((tx) => tx.userId === user.id);
   return { transactions: rows.map(publicTransaction) };
+}
+
+function publicBet(bet) {
+  return {
+    id: bet.id,
+    userId: bet.userId,
+    type: bet.type,
+    stake: bet.stake,
+    payoutMultiplier: bet.payoutMultiplier,
+    picks: bet.picks,
+    status: bet.status,
+    payout: bet.payout,
+    createdAt: bet.createdAt,
+    settledAt: bet.settledAt || null,
+  };
+}
+
+async function readDbNormalized() {
+  const db = await readDb();
+  return normalizeDb(db);
+}
+
+export async function walletPlaceBet(token, payload) {
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return { error: 'Session မရှိပါ' };
+  }
+
+  const type = payload.type === 'maung' ? 'maung' : 'body';
+  const stake = Number(payload.stake);
+  const picks = Array.isArray(payload.picks) ? payload.picks : [];
+
+  if (!Number.isFinite(stake) || stake <= 0) {
+    return { error: 'လောင်းငွေ ထည့်ပါ' };
+  }
+  if (type === 'maung' && (picks.length < 2 || picks.length > 11)) {
+    return { error: 'မောင်းအတွက် ပွဲ ၂ မှ ၁၁ ပွဲ ရွေးပါ' };
+  }
+  if (type === 'body' && picks.length !== 1) {
+    return { error: 'ဘော်ဒီအတွက် အသင်းတစ်သင်းသာ ရွေးပါ' };
+  }
+  if (user.balance < stake) {
+    return { error: 'လက်ကျန်ငွေ မလုံလောက်ပါ' };
+  }
+
+  let payoutMultiplier = 1;
+  for (const pick of picks) {
+    payoutMultiplier *= parseMultiplier(pick.oddsLabel);
+  }
+
+  const db = await readDbNormalized();
+  const record = db.users.find((entry) => entry.id === user.id);
+  if (!record) {
+    return { error: 'User မတွေ့ပါ' };
+  }
+
+  record.balance -= stake;
+  const bet = {
+    id: newId('bet'),
+    userId: record.id,
+    username: record.username,
+    type,
+    stake,
+    payoutMultiplier: Number(payoutMultiplier.toFixed(4)),
+    picks: picks.map((pick) => ({
+      matchId: String(pick.matchId || ''),
+      league: String(pick.league || ''),
+      homeName: String(pick.homeName || ''),
+      awayName: String(pick.awayName || ''),
+      side: String(pick.side || ''),
+      oddsLabel: String(pick.oddsLabel || ''),
+      summary: String(pick.summary || ''),
+      goalLine: pick.goalLine !== undefined ? Number(pick.goalLine) : undefined,
+    })),
+    status: 'pending',
+    payout: 0,
+    createdAt: new Date().toISOString(),
+    settledAt: null,
+  };
+
+  db.bets.unshift(bet);
+  await writeDb(db);
+  return { bet: publicBet(bet), user: publicUser(record) };
+}
+
+export async function walletListBets(token, status = 'all') {
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return { error: 'Session မရှိပါ' };
+  }
+
+  const db = await readDbNormalized();
+  let rows = db.bets.filter((bet) => bet.userId === user.id);
+  if (status === 'open') {
+    rows = rows.filter((bet) => bet.status === 'pending');
+  } else if (status === 'settled') {
+    rows = rows.filter((bet) => bet.status === 'won' || bet.status === 'lost');
+  }
+
+  const openStake = db.bets
+    .filter((bet) => bet.userId === user.id && bet.status === 'pending')
+    .reduce((sum, bet) => sum + bet.stake, 0);
+
+  return {
+    bets: rows.map(publicBet),
+    openStake,
+    user: publicUser(db.users.find((entry) => entry.id === user.id) || user),
+  };
+}
+
+export async function walletSettleBets(token, matchResults = []) {
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return { error: 'Session မရှိပါ' };
+  }
+
+  const db = await readDbNormalized();
+  const { credited, settled } = settleUserBets(db, user.id, matchResults);
+  if (settled > 0) {
+    await writeDb(db);
+  }
+
+  const record = db.users.find((entry) => entry.id === user.id);
+  return {
+    credited,
+    settled,
+    user: publicUser(record || user),
+  };
 }
 
 export async function userRequestTransaction(token, type, amount, note = '') {

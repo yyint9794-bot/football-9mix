@@ -86,6 +86,28 @@ async function handleWalletApi(req: IncomingMessage, res: ServerResponse) {
       return;
     }
 
+    if (segments[0] === 'bets' && segments[1] === 'settle' && req.method === 'POST') {
+      const result = await wallet.walletSettleBets(
+        token,
+        Array.isArray(body.matches) ? body.matches : [],
+      );
+      sendJson(res, result.error ? 401 : 200, result);
+      return;
+    }
+
+    if (segments[0] === 'bets' && req.method === 'POST') {
+      const result = await wallet.walletPlaceBet(token, body);
+      sendJson(res, result.error ? 400 : 200, result);
+      return;
+    }
+
+    if (segments[0] === 'bets' && req.method === 'GET') {
+      const query = new URL(req.url ?? '/', 'http://localhost').searchParams;
+      const result = await wallet.walletListBets(token, query.get('status') || 'all');
+      sendJson(res, result.error ? 401 : 200, result);
+      return;
+    }
+
     if (segments[0] === 'admin' && segments[1] === 'users') {
       if (req.method === 'GET' && segments.length === 2) {
         const result = await wallet.adminListUsers(token);

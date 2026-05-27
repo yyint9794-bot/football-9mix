@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getFootballMatches } from './api';
 import {
   buildBettingRows,
@@ -14,12 +14,23 @@ import { getEnglishTeamName } from './betting/teamNames';
 import type { BetPick, BetSide, BettingMatchRow } from './betting/types';
 import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
+import { UserBetSidebar } from './UserBetSidebar';
+import { UserBetsPanel } from './UserBetsPanel';
 import { UserWalletPanel } from './UserWalletPanel';
 import type { Match } from './types';
-import { formatMmk } from './wallet/api';
+import { fetchMyBets, formatMmk, placeBet, settleMyBets } from './wallet/api';
+import { buildMatchResults } from './wallet/betSync';
 import { useAuth } from './wallet/AuthContext';
+import type { WalletBetPick } from './wallet/types';
 
-type Screen = 'hub' | 'body-goal' | 'maung' | 'wallet';
+type Screen =
+  | 'hub'
+  | 'body-goal'
+  | 'maung'
+  | 'deposit'
+  | 'withdraw'
+  | 'open-bets'
+  | 'results';
 
 type UserBettingAppProps = {
   onClose: () => void;
@@ -60,6 +71,18 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   const [showTerms, setShowTerms] = useState(!user?.termsAccepted);
   const [showLeagueFilter, setShowLeagueFilter] = useState(false);
   const [leagueFilter, setLeagueFilter] = useState<Set<string> | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openBetsEstimate, setOpenBetsEstimate] = useState(0);
+  const [placingBet, setPlacingBet] = useState(false);
+
+  const loadOpenStake = useCallback(async () => {
+    try {
+      const result = await fetchMyBets('open');
+      setOpenBetsEstimate(result.openStake);
+    } catch {
+      setOpenBetsEstimate(0);
+    }
+  }, []);
 
   useEffect(() => {
     setShowTerms(!user?.termsAccepted);
@@ -94,6 +117,25 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     };
   }, []);
 
+  useEffect(() => {
+    void loadOpenStake();
+  }, [loadOpenStake, user?.id]);
+
+  useEffect(() => {
+    if (!user || !matches.length) {
+      return;
+    }
+
+    void settleMyBets(buildMatchResults(matches))
+      .then((result) => {
+        if (result.credited > 0) {
+          void refresh();
+        }
+        return loadOpenStake();
+      })
+      .catch(() => undefined);
+  }, [matches, user, refresh, loadOpenStake]);
+
   const bettingRows = useMemo(() => buildBettingRows(matches), [matches]);
   const availableLeagues = useMemo(
     () => [...new Set(bettingRows.map((row) => row.league))].sort((a, b) => a.localeCompare(b)),
@@ -106,8 +148,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     return bettingRows.filter((row) => leagueFilter.has(row.league));
   }, [bettingRows, leagueFilter, availableLeagues.length]);
   const leagueGroups = useMemo(() => groupBettingRowsByLeague(filteredRows), [filteredRows]);
-
-  const openBetsEstimate = 0;
 
   if (!user) {
     return null;
@@ -173,7 +213,25 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   const isSelected = (picks: BetPick[], matchId: string, side: BetSide) =>
     picks.some((pick) => pick.matchId === matchId && pick.side === side);
 
-  const handlePlaceBet = () => {
+  const toApiPicks = (picks: BetPick[]): WalletBetPick[] =>
+    picks.map((pick) => {
+      const row = bettingRows.find((entry) => String(entry.match.id) === pick.matchId);
+      const goalLine = row?.goal?.goalLine
+        ? Number(String(row.goal.goalLine).replace(/[^\d.]/g, ''))
+        : undefined;
+      return {
+        matchId: pick.matchId,
+        league: pick.league,
+        homeName: pick.homeName,
+        awayName: pick.awayName,
+        side: pick.side,
+        oddsLabel: pick.oddsLabel,
+        summary: pick.summary,
+        goalLine: Number.isFinite(goalLine) ? goalLine : undefined,
+      };
+    });
+
+  const handlePlaceBet = async () => {
     const amount = Number(stake);
     if (!Number.isFinite(amount) || amount <= 0) {
       setBetStatus('လောင်းငွေ ထည့်ပါ');
@@ -188,16 +246,38 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         setBetStatus('မောင်းအတွက် ပွဲ ၂ မှ ၁၁ ပွဲ ရွေးပါ');
         return;
       }
-      const slip = maungPicks.map((pick) => pick.summary).join(' / ');
-      setBetStatus(`မောင်း ${maungPicks.length} — ${slip} — ${formatMmk(amount)}`);
-      return;
-    }
-    if (screen === 'body-goal') {
+    } else if (screen === 'body-goal') {
       if (bodyPicks.length !== 1) {
         setBetStatus('ဘော်ဒီအတွက် အသင်းတစ်သင်းသာ ရွေးပါ');
         return;
       }
-      setBetStatus(`${bodyPicks[0].summary} — ${formatMmk(amount)}`);
+    } else {
+      return;
+    }
+
+    const picks = screen === 'maung' ? maungPicks : bodyPicks;
+    setPlacingBet(true);
+    setBetStatus('');
+    try {
+      await placeBet({
+        type: screen === 'maung' ? 'maung' : 'body',
+        stake: amount,
+        picks: toApiPicks(picks),
+      });
+      await refresh();
+      await loadOpenStake();
+      setMaungPicks([]);
+      setBodyPicks([]);
+      setStake('');
+      setBetStatus(
+        screen === 'maung'
+          ? `မောင်း ${picks.length} ပွဲ — ${formatMmk(amount)} လောင်းပြီးပါပြီ`
+          : `${picks[0].summary} — ${formatMmk(amount)} လောင်းပြီးပါပြီ`,
+      );
+    } catch (error) {
+      setBetStatus(error instanceof Error ? error.message : 'လောင်းမှု မအောင်မြင်ပါ');
+    } finally {
+      setPlacingBet(false);
     }
   };
 
@@ -220,8 +300,13 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
                 onChange={(event) => setStake(event.target.value)}
               />
             </label>
-            <button type="button" className="bet-footer-submit" onClick={handlePlaceBet}>
-              လောင်းမည်
+            <button
+              type="button"
+              className="bet-footer-submit"
+              disabled={placingBet}
+              onClick={() => void handlePlaceBet()}
+            >
+              {placingBet ? '…' : 'လောင်းမည်'}
             </button>
           </>
         ) : (
@@ -237,8 +322,13 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               value={stake}
               onChange={(event) => setStake(event.target.value)}
             />
-            <button type="button" className="bet-footer-submit" onClick={handlePlaceBet}>
-              လောင်းမည်
+            <button
+              type="button"
+              className="bet-footer-submit"
+              disabled={placingBet}
+              onClick={() => void handlePlaceBet()}
+            >
+              {placingBet ? '…' : 'လောင်းမည်'}
             </button>
           </>
         )}
@@ -377,23 +467,37 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     </header>
   );
 
-  if (screen === 'wallet') {
-    return (
-      <div className={shellClass}>
-        <div className="betting-app-shell">
-          <header className="betting-topbar">
-            <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
-              ← နောက်သို့
-            </button>
-            <strong>ငွေစာရင်း</strong>
-            <button type="button" className="live-close-btn" onClick={onClose}>
-              {closeLabel}
-            </button>
-          </header>
-          <UserWalletPanel />
-        </div>
+  const renderSubPage = (title: string, content: ReactNode) => (
+    <div className={shellClass}>
+      <div className="betting-app-shell hub-sub">
+        <header className="betting-topbar dark">
+          <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
+            ←
+          </button>
+          <strong>{title}</strong>
+          <button type="button" className="live-close-btn" onClick={onClose}>
+            {closeLabel}
+          </button>
+        </header>
+        {content}
       </div>
-    );
+    </div>
+  );
+
+  if (screen === 'deposit') {
+    return renderSubPage('ငွေသွင်း', <UserWalletPanel mode="deposit" />);
+  }
+
+  if (screen === 'withdraw') {
+    return renderSubPage('ငွေထုတ်', <UserWalletPanel mode="withdraw" />);
+  }
+
+  if (screen === 'open-bets') {
+    return renderSubPage('လောင်းထားသောပွဲများ', <UserBetsPanel mode="open" />);
+  }
+
+  if (screen === 'results') {
+    return renderSubPage('ပွဲပြီးရလဒ်', <UserBetsPanel mode="settled" />);
   }
 
   if (screen === 'body-goal' || screen === 'maung') {
@@ -409,29 +513,31 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
             </p>
           ) : null}
 
-          <div className="bet-list">
-            {loading ? <p className="bet-loading">API ကြေးဒေတာ ဖတ်နေပါတယ်…</p> : null}
-            {error ? <p className="bet-error">{error}</p> : null}
-            {!loading && !filteredRows.length ? (
-              <p className="bet-error">
-                {filterActive ? 'ရွေးထားသော လိဂ်တွင် ကြေးမရှိပါ' : 'ယခု ကြေးမထုတ်ရသေးပါ'}
-              </p>
-            ) : null}
-            {leagueGroups.map((group) => (
-              <section className="bet-league-section" key={group.league}>
-                <div className="bet-league-bar">
-                  <span className="bet-league-star" aria-hidden>
-                    ★
-                  </span>
-                  {group.league}
-                </div>
-                {group.rows.map((row) => renderMatchCard(row, screen))}
-              </section>
-            ))}
-          </div>
+          <div className="bet-odds-body">
+            <div className="bet-list">
+              {loading ? <p className="bet-loading">API ကြေးဒေတာ ဖတ်နေပါတယ်…</p> : null}
+              {error ? <p className="bet-error">{error}</p> : null}
+              {!loading && !filteredRows.length ? (
+                <p className="bet-error">
+                  {filterActive ? 'ရွေးထားသော လိဂ်တွင် ကြေးမရှိပါ' : 'ယခု ကြေးမထုတ်ရသေးပါ'}
+                </p>
+              ) : null}
+              {leagueGroups.map((group) => (
+                <section className="bet-league-section" key={group.league}>
+                  <div className="bet-league-bar">
+                    <span className="bet-league-star" aria-hidden>
+                      ★
+                    </span>
+                    {group.league}
+                  </div>
+                  {group.rows.map((row) => renderMatchCard(row, screen))}
+                </section>
+              ))}
+            </div>
 
-          {betStatus ? <p className="bet-status-toast">{betStatus}</p> : null}
-          {renderBetFooter(screen === 'maung' ? 'maung' : 'body')}
+            {betStatus ? <p className="bet-status-toast">{betStatus}</p> : null}
+            {renderBetFooter(screen === 'maung' ? 'maung' : 'body')}
+          </div>
 
           {showLeagueFilter && availableLeagues.length ? (
             <LeagueFilterSheet
@@ -449,8 +555,24 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   return (
     <div className={shellClass}>
       <div className="betting-app-shell hub">
+        <UserBetSidebar
+          open={sidebarOpen}
+          user={user}
+          onClose={() => setSidebarOpen(false)}
+          onNavigate={(next) => {
+            setSidebarOpen(false);
+            setScreen(next);
+          }}
+          onLogout={() => void logout()}
+        />
+
         <header className="betting-hub-head">
-          <button type="button" className="menu-button hub-menu" aria-label="Menu">
+          <button
+            type="button"
+            className="menu-button hub-menu"
+            aria-label="Menu"
+            onClick={() => setSidebarOpen(true)}
+          >
             <span />
             <span />
             <span />
@@ -508,11 +630,36 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               <span>🎯</span>
               <b>ဘော်ဒီ/ဂိုးပေါင်း</b>
             </button>
-            <button type="button" onClick={() => setScreen('wallet')}>
-              <span>💰</span>
-              <b>ငွေစာရင်း</b>
+            <button type="button" onClick={() => setScreen('open-bets')}>
+              <span>📋</span>
+              <b>လောင်းထားသောပွဲများ</b>
             </button>
-            <button type="button" onClick={() => void refresh()}>
+            <button type="button" onClick={() => setScreen('results')}>
+              <span>🏁</span>
+              <b>ပွဲပြီးရလဒ်</b>
+            </button>
+            <button type="button" onClick={() => setScreen('deposit')}>
+              <span>💵</span>
+              <b>ငွေသွင်း</b>
+            </button>
+            <button type="button" onClick={() => setScreen('withdraw')}>
+              <span>💸</span>
+              <b>ငွေထုတ်</b>
+            </button>
+            <button
+              type="button"
+              className="betting-menu-wide"
+              onClick={() => {
+                void refresh();
+                void loadOpenStake();
+                void settleMyBets(buildMatchResults(matches)).then((result) => {
+                  if (result.credited > 0) {
+                    void refresh();
+                  }
+                  void loadOpenStake();
+                });
+              }}
+            >
               <span>🔄</span>
               <b>ဒေတာပြန်လည်ရယူ</b>
             </button>

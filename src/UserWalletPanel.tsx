@@ -7,12 +7,18 @@ import {
 import { useAuth } from './wallet/AuthContext';
 import type { WalletTransaction } from './wallet/types';
 
-export function UserWalletPanel() {
+type UserWalletPanelProps = {
+  mode?: 'deposit' | 'withdraw' | 'both';
+};
+
+export function UserWalletPanel({ mode = 'both' }: UserWalletPanelProps) {
   const { user, logout, refresh } = useAuth();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [requestType, setRequestType] = useState<'deposit' | 'withdraw'>('deposit');
+  const [requestType, setRequestType] = useState<'deposit' | 'withdraw'>(
+    mode === 'withdraw' ? 'withdraw' : 'deposit',
+  );
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -52,22 +58,24 @@ export function UserWalletPanel() {
       </div>
 
       <form className="wallet-request-form" onSubmit={handleRequest}>
-        <div className="wallet-request-tabs">
-          <button
-            type="button"
-            className={requestType === 'deposit' ? 'active' : ''}
-            onClick={() => setRequestType('deposit')}
-          >
-            ငွေသွင်း
-          </button>
-          <button
-            type="button"
-            className={requestType === 'withdraw' ? 'active' : ''}
-            onClick={() => setRequestType('withdraw')}
-          >
-            ငွေထုတ်
-          </button>
-        </div>
+        {mode === 'both' ? (
+          <div className="wallet-request-tabs">
+            <button
+              type="button"
+              className={requestType === 'deposit' ? 'active' : ''}
+              onClick={() => setRequestType('deposit')}
+            >
+              ငွေသွင်း
+            </button>
+            <button
+              type="button"
+              className={requestType === 'withdraw' ? 'active' : ''}
+              onClick={() => setRequestType('withdraw')}
+            >
+              ငွေထုတ်
+            </button>
+          </div>
+        ) : null}
         <label className="search-box">
           <span>ပမာဏ (MMK)</span>
           <input
@@ -116,9 +124,11 @@ export function UserWalletPanel() {
         </div>
       </div>
 
-      <button type="button" className="ghost-button wallet-logout" onClick={() => void logout()}>
-        ထွက်မည်
-      </button>
+      {mode === 'both' ? (
+        <button type="button" className="ghost-button wallet-logout" onClick={() => void logout()}>
+          ထွက်မည်
+        </button>
+      ) : null}
     </div>
   );
 }

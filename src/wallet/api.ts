@@ -1,4 +1,4 @@
-import type { WalletTransaction, WalletUser } from './types';
+import type { WalletBet, WalletBetPick, WalletTransaction, WalletUser } from './types';
 
 const TOKEN_KEY = 'mix9-auth-token';
 const SAVED_USER_KEY = 'mix9-saved-username';
@@ -144,6 +144,31 @@ export async function requestTransaction(type: 'deposit' | 'withdraw', amount: n
   return walletFetch<{ transaction: WalletTransaction }>('request', {
     method: 'POST',
     body: JSON.stringify({ type, amount, note }),
+  });
+}
+
+export async function placeBet(payload: {
+  type: 'maung' | 'body';
+  stake: number;
+  picks: WalletBetPick[];
+}) {
+  return walletFetch<{ bet: WalletBet; user: WalletUser }>('bets', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchMyBets(status: 'all' | 'open' | 'settled' = 'all') {
+  const query = status === 'all' ? '' : `?status=${status}`;
+  return walletFetch<{ bets: WalletBet[]; openStake: number; user: WalletUser }>(`bets${query}`);
+}
+
+export async function settleMyBets(
+  matches: Array<{ matchId: string; homeScore: number; awayScore: number; finished: boolean }>,
+) {
+  return walletFetch<{ credited: number; settled: number; user: WalletUser }>('bets/settle', {
+    method: 'POST',
+    body: JSON.stringify({ matches }),
   });
 }
 
