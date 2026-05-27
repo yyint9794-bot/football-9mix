@@ -1,31 +1,17 @@
 import { Capacitor } from '@capacitor/core';
 import { fetchFirebaseAppVersion } from './firebaseUpdate';
 import { APP_DOWNLOAD_PAGE, type AppVersionInfo } from './appVersionInfo';
-import {
-  PUBLISHED_RELEASE_NOTES,
-  PUBLISHED_VERSION_CODE,
-  PUBLISHED_VERSION_NAME,
-} from './publishedVersion';
+import { parseReleaseFeatures } from './parseReleaseFeatures';
+import { PUBLISHED_VERSION_CODE } from './publishedVersion';
 
 export type { AppVersionInfo } from './appVersionInfo';
 export { APP_DOWNLOAD_PAGE } from './appVersionInfo';
 
-const FETCH_MS = 5000;
+const FETCH_MS = 8000;
 
 function withCacheBust(url: string) {
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}cb=${Date.now()}`;
-}
-
-function publishedFallback(): AppVersionInfo {
-  return {
-    versionCode: PUBLISHED_VERSION_CODE,
-    versionName: PUBLISHED_VERSION_NAME,
-    apkUrl: APP_DOWNLOAD_PAGE,
-    apkUrlSite: APP_DOWNLOAD_PAGE,
-    releaseNotes: PUBLISHED_RELEASE_NOTES,
-    source: 'bundled',
-  };
 }
 
 async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
@@ -44,14 +30,28 @@ async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
     if (!text.trim().startsWith('{')) {
       return null;
     }
-    const data = JSON.parse(text) as AppVersionInfo;
+    const data = JSON.parse(text) as AppVersionInfo & {
+      releaseFeatures?: string[] | string;
+      forceUpdate?: boolean;
+    };
     if (!data?.versionCode || data.versionCode < 1) {
       return null;
     }
+
+    const features =
+      Array.isArray(data.releaseFeatures)
+        ? data.releaseFeatures.map((item) => String(item).trim()).filter(Boolean)
+        : parseReleaseFeatures(typeof data.releaseFeatures === 'string' ? data.releaseFeatures : '');
+
     return {
-      ...data,
+      versionCode: data.versionCode,
+      versionName: String(data.versionName || data.versionCode),
       apkUrl: APP_DOWNLOAD_PAGE,
       apkUrlSite: APP_DOWNLOAD_PAGE,
+      releaseNotes: data.releaseNotes,
+      releaseFeatures: features,
+      forceUpdate: data.forceUpdate !== false,
+      minVersionCode: data.versionCode,
       source: 'json',
     };
   } catch {
@@ -61,25 +61,15 @@ async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
   }
 }
 
-/** Firebase Remote Config ဦးစား → app-version.json → APK ထဲ ဗားရှင်း */
-export async function fetchLatestAppVersion(): Promise<AppVersionInfo> {
-  const published = publishedFallback();
-
+/** Firebase Remote Config → ballpwal.org/app-version.json (bundled ဗားရှင်းကို latest အဖြစ် မသုံး) */
+export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
   const firebase = await fetchFirebaseAppVersion();
   if (firebase?.versionCode) {
     return firebase;
   }
 
   const jsonUrl = withCacheBust('https://ballpwal.org/app-version.json');
-  const json = await fetchJsonVersion(jsonUrl);
-  if (json && json.versionCode >= published.versionCode) {
-    return {
-      ...json,
-      versionCode: Math.max(json.versionCode, published.versionCode),
-    };
-  }
-
-  return published;
+  return fetchJsonVersion(jsonUrl);
 }
 
 export async function openAppDownloadPage(url?: string) {
@@ -110,6 +100,11 @@ export async function getInstalledVersionCode(): Promise<number> {
     if (Number.isFinite(build) && build > 0) {
       return build;
     }
+    const versionDigits = String(info.version || '').replace(/\D/g, '');
+    const fromName = Number.parseInt(versionDigits, 10);
+    if (Number.isFinite(fromName) && fromName > 0) {
+      return fromName;
+    }
   } catch {
     // fall through
   }
@@ -118,9 +113,24 @@ export async function getInstalledVersionCode(): Promise<number> {
 }
 
 export function requiresAppUpdate(remote: AppVersionInfo, localCode: number) {
-  const required = Math.max(
-    remote.minVersionCode ?? remote.versionCode,
-    PUBLISHED_VERSION_CODE,
-  );
-  return localCode > 0 && localCode < required;
+  const required = Math.max(remote.minVersionCode ?? 0, remote.versionCode);
+  if (!Number.isFinite(required) || required < 1) {
+    return false;
+  }
+
+  const local = localCode > 0 ? localCode : 1;
+  return local < required;
+}
+
+export function isUpdateMandatory(remote: AppVersionInfo) {
+  return remote.forceUpdate !== false;
+}
+
+export function getEffectiveInstalledCode(localCode: number) {
+  return localCode > 0 ? localCode : 1;
+}
+
+/** APK ထဲ bundled version — remote မရရင် နှိုင်းယှဉ်မသုံး */
+export function getBundledVersionCode() {
+  return PUBLISHED_VERSION_CODE;
 }

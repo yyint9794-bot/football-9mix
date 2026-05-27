@@ -1,6 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /live_rooms/{roomId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['updatedAt'])
+        && request.resource.data.updatedAt is number;
+      allow delete: if false;
+    }
     match /live_rooms/{roomId}/messages/{messageId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['userId', 'displayName', 'text', 'createdAt'])

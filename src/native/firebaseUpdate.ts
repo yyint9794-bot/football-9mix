@@ -1,14 +1,13 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { fetchAndActivate, getRemoteConfig, getValue, type RemoteConfig } from 'firebase/remote-config';
+import { getFirebaseApp } from './firebaseApp';
 import { APP_DOWNLOAD_PAGE, type AppVersionInfo } from './appVersionInfo';
-import { loadFirebaseWebConfig } from './firebaseConfig';
+import { parseReleaseFeatures } from './parseReleaseFeatures';
 import {
   PUBLISHED_RELEASE_NOTES,
   PUBLISHED_VERSION_CODE,
   PUBLISHED_VERSION_NAME,
 } from './publishedVersion';
 
-let firebaseApp: FirebaseApp | null = null;
 let remoteConfig: RemoteConfig | null = null;
 
 function rcNumber(rc: RemoteConfig, key: string, fallback: number) {
@@ -22,8 +21,11 @@ function rcString(rc: RemoteConfig, key: string, fallback: string) {
   return raw || fallback;
 }
 
-function rcBool(rc: RemoteConfig, key: string) {
+function rcBool(rc: RemoteConfig, key: string, fallback = false) {
   const raw = getValue(rc, key).asString().trim().toLowerCase();
+  if (!raw) {
+    return fallback;
+  }
   return raw === 'true' || raw === '1' || raw === 'yes';
 }
 
@@ -32,27 +34,26 @@ async function ensureRemoteConfig() {
     return remoteConfig;
   }
 
-  const fileConfig = await loadFirebaseWebConfig();
-  if (!fileConfig) {
+  const firebaseApp = await getFirebaseApp();
+  if (!firebaseApp) {
     return null;
   }
 
-  const { enabled: _enabled, ...options } = fileConfig;
-  firebaseApp = initializeApp(options);
   remoteConfig = getRemoteConfig(firebaseApp);
 
   remoteConfig.defaultConfig = {
-    app_min_version_code: String(PUBLISHED_VERSION_CODE),
+    app_min_version_code: '1',
     app_latest_version_code: String(PUBLISHED_VERSION_CODE),
     app_version_name: PUBLISHED_VERSION_NAME,
     app_download_url: APP_DOWNLOAD_PAGE,
     app_release_notes: PUBLISHED_RELEASE_NOTES,
-    app_force_update: 'false',
+    app_release_features: '',
+    app_force_update: 'true',
   };
 
   remoteConfig.settings = {
-    minimumFetchIntervalMillis: import.meta.env.DEV ? 0 : 60 * 60 * 1000,
-    fetchTimeoutMillis: 8000,
+    minimumFetchIntervalMillis: import.meta.env.DEV ? 0 : 5 * 60 * 1000,
+    fetchTimeoutMillis: 12_000,
   };
 
   await fetchAndActivate(remoteConfig);
@@ -69,8 +70,9 @@ export async function fetchFirebaseAppVersion(): Promise<AppVersionInfo | null> 
 
     const latestCode = rcNumber(rc, 'app_latest_version_code', PUBLISHED_VERSION_CODE);
     const minCode = rcNumber(rc, 'app_min_version_code', latestCode);
-    const versionCode = Math.max(latestCode, minCode, PUBLISHED_VERSION_CODE);
+    const versionCode = Math.max(latestCode, minCode);
     const downloadUrl = rcString(rc, 'app_download_url', APP_DOWNLOAD_PAGE);
+    const featuresRaw = rcString(rc, 'app_release_features', '');
 
     return {
       versionCode,
@@ -78,15 +80,12 @@ export async function fetchFirebaseAppVersion(): Promise<AppVersionInfo | null> 
       apkUrl: downloadUrl,
       apkUrlSite: downloadUrl,
       releaseNotes: rcString(rc, 'app_release_notes', PUBLISHED_RELEASE_NOTES),
-      forceUpdate: rcBool(rc, 'app_force_update'),
+      releaseFeatures: parseReleaseFeatures(featuresRaw),
+      forceUpdate: rcBool(rc, 'app_force_update', true),
       minVersionCode: minCode,
       source: 'firebase',
     };
   } catch {
     return null;
   }
-}
-
-export function isFirebaseUpdateConfigured() {
-  return Boolean(firebaseApp);
 }

@@ -19,7 +19,14 @@ const payload = {
   apkUrl,
   apkUrlSite: apkUrl,
   apkUrlCdn: apkUrl,
-  releaseNotes: 'Live Chat ချက်ချင်း မြင်ရမည်၊ Update v12',
+  forceUpdate: true,
+  releaseNotes: `Live Chat ချက်ချင်း မြင်ရမည် — v${versionCode} အရေးကြီး update`,
+  releaseFeatures: [
+    'Live Chat — ဖုန်း ၂ လုံးမှာ ချက်ချင်း မြင်ရမည်',
+    'Update မလုပ်ရသေးရင် App မဖွင့်ရ',
+    'မောင်း/ဘော်ဒီ UI ပြင်ဆင်ချက်',
+    'Live ကြည့်ရှု + Chat တစ်နေရာတည်း',
+  ],
 };
 
 const outPath = join(root, 'public', 'app-version.json');

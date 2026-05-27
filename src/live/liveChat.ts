@@ -1,13 +1,14 @@
 import {
   addDoc,
   collection,
+  doc,
   limit,
   onSnapshot,
   query,
+  setDoc,
   type Timestamp,
 } from 'firebase/firestore';
 import { extractFixtureId } from '../matchExtras';
-import { getMatchDateKey } from '../matchUi';
 import type { Match } from '../types';
 import { getLiveFirestore } from './firebaseLive';
 
@@ -34,7 +35,14 @@ function slugTeam(name: string) {
   );
 }
 
-/** App/Web တစ်ခုတည်း room — stream fixture id သို့မဟုတ်င်းအမည်+ရက်စွဲ */
+function pairRoomKey(match: Match) {
+  const home = slugTeam(String(match.homeTeam?.name || 'home'));
+  const away = slugTeam(String(match.awayTeam?.name || 'away'));
+  const [a, b] = home <= away ? [home, away] : [away, home];
+  return `pair-${a}-vs-${b}`;
+}
+
+/** App/Web တစ်ခုတည်း room — fixture သို့မဟုတ် င်းအမည် pair (စာပို့/မြင်ရ တူညီအောင်) */
 export function getMatchChatRoomId(match: Match) {
   const fixture = extractFixtureId(match);
   if (fixture) {
@@ -50,13 +58,13 @@ export function getMatchChatRoomId(match: Match) {
     if (numeric) {
       return `fixture-${numeric}`;
     }
-    return `id-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48)}`;
   }
 
-  const home = slugTeam(String(match.homeTeam?.name || 'home'));
-  const away = slugTeam(String(match.awayTeam?.name || 'away'));
-  const day = getMatchDateKey(match);
-  return `teams-${home}-${away}-${day}`;
+  return pairRoomKey(match);
+}
+
+export function getMatchChatRoomLabel(match: Match) {
+  return getMatchChatRoomId(match);
 }
 
 export function getChatUserId() {
@@ -178,6 +186,11 @@ export async function sendLiveChatMessage(
   saveChatDisplayName(name);
 
   const createdAt = Date.now();
+  await setDoc(
+    doc(firestore, 'live_rooms', roomId),
+    { updatedAt: createdAt, title: roomId },
+    { merge: true },
+  );
   await addDoc(collection(firestore, 'live_rooms', roomId, 'messages'), {
     userId: getChatUserId(),
     displayName: name,

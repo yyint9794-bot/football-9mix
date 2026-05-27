@@ -1,8 +1,10 @@
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   fetchLatestAppVersion,
+  getEffectiveInstalledCode,
   getInstalledVersionCode,
+  isUpdateMandatory,
   openAppDownloadPage,
   requiresAppUpdate,
   type AppVersionInfo,
@@ -12,110 +14,131 @@ type AppUpdateBannerProps = {
   children: ReactNode;
 };
 
-const DISMISS_KEY = 'ballpwal-update-dismiss';
-const DISMISS_HOURS = 24;
+type GateState = 'checking' | 'blocked' | 'ready';
 
-function readDismissed(versionCode: number) {
-  try {
-    const raw = localStorage.getItem(DISMISS_KEY);
-    if (!raw) {
-      return false;
-    }
-    const parsed = JSON.parse(raw) as { versionCode: number; until: number };
-    if (parsed.versionCode !== versionCode) {
-      return false;
-    }
-    return Date.now() < parsed.until;
-  } catch {
-    return false;
-  }
-}
-
-function writeDismissed(versionCode: number) {
-  const until = Date.now() + DISMISS_HOURS * 60 * 60 * 1000;
-  localStorage.setItem(DISMISS_KEY, JSON.stringify({ versionCode, until }));
-}
-
-/** Firebase Remote Config — banner (သို့) force update */
+/** Update မလုပ်ရသေးရင် App မသုံး — feature list ပါ */
 export function AppUpdateBanner({ children }: AppUpdateBannerProps) {
+  const [gate, setGate] = useState<GateState>('checking');
   const [latest, setLatest] = useState<AppVersionInfo | null>(null);
   const [installedCode, setInstalledCode] = useState(0);
-  const [bannerVisible, setBannerVisible] = useState(false);
-  const [forceBlock, setForceBlock] = useState(false);
+  const [checkError, setCheckError] = useState('');
+
+  const runCheck = useCallback(async () => {
+    if (!Capacitor.isNativePlatform()) {
+      setGate('ready');
+      return;
+    }
+
+    setCheckError('');
+    setGate('checking');
+
+    const localCode = await getInstalledVersionCode();
+    setInstalledCode(localCode);
+
+    try {
+      const remote = await fetchLatestAppVersion();
+      if (!remote?.versionCode) {
+        setCheckError('ဗားရှင်း စစ်ဆေးမှု မရပါ — အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ');
+        setGate('blocked');
+        return;
+      }
+
+      setLatest(remote);
+
+      if (requiresAppUpdate(remote, localCode)) {
+        setGate('blocked');
+        return;
+      }
+
+      setGate('ready');
+    } catch {
+      setCheckError('ဗားရှင်း စစ်ဆေးမှု မအောင်မြင်ပါ');
+      setGate('blocked');
+    }
+  }, []);
 
   useEffect(() => {
+    void runCheck();
+
     if (!Capacitor.isNativePlatform()) {
       return;
     }
 
-    let disposed = false;
-
-    void (async () => {
-      const localCode = await getInstalledVersionCode();
-      if (disposed) {
-        return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void runCheck();
       }
-
-      setInstalledCode(localCode);
-
-      try {
-        const remote = await fetchLatestAppVersion();
-        if (disposed || !remote?.versionCode) {
-          return;
-        }
-
-        setLatest(remote);
-
-        if (!requiresAppUpdate(remote, localCode)) {
-          return;
-        }
-
-        if (remote.forceUpdate) {
-          setForceBlock(true);
-          return;
-        }
-
-        if (!readDismissed(remote.versionCode)) {
-          setBannerVisible(true);
-        }
-      } catch {
-        // Firebase/JSON မရရင် App ဆက်သုံး
-      }
-    })();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = globalThis.setInterval(() => void runCheck(), 5 * 60 * 1000);
 
     return () => {
-      disposed = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      globalThis.clearInterval(timer);
     };
-  }, []);
-
-  const dismissBanner = () => {
-    if (latest?.versionCode) {
-      writeDismissed(latest.versionCode);
-    }
-    setBannerVisible(false);
-  };
+  }, [runCheck]);
 
   const download = () => {
     void openAppDownloadPage(latest?.apkUrl);
   };
 
-  if (forceBlock && latest) {
+  if (!Capacitor.isNativePlatform()) {
+    return <>{children}</>;
+  }
+
+  if (gate === 'checking') {
     return (
       <div className="m-update-block" role="dialog" aria-modal="true">
         <div className="m-update-card m-update-card-block">
-          <span className="m-update-badge">Firebase Update</span>
+          <p className="m-update-checking">ဗားရှင်း စစ်ဆေးနေပါတယ်…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (gate === 'blocked' && latest) {
+    const local = getEffectiveInstalledCode(installedCode);
+    const mandatory = isUpdateMandatory(latest);
+    const features = latest.releaseFeatures ?? [];
+
+    return (
+      <div className="m-update-block" role="dialog" aria-modal="true">
+        <div className="m-update-card m-update-card-block">
+          <span className="m-update-badge">App Update</span>
           <h2>ဗားရှင်း အသစ် လိုအပ်ပါသည်</h2>
           <p>
-            လက်ရှိ v{installedCode} → အသစ်{' '}
+            လက်ရှိ <strong>v{local}</strong> → အသစ်{' '}
             <strong>
               {latest.versionName} (v{latest.versionCode})
             </strong>
           </p>
           {latest.releaseNotes ? <p className="m-update-notes">{latest.releaseNotes}</p> : null}
-          <p className="m-update-hint">Firebase Console မှ ထိန်းချုပ်ထားသော update — ဒေါင်းလုဒ်ပြီး ထပ်သွင်းပါ။</p>
+
+          {features.length > 0 ? (
+            <div className="m-update-features">
+              <h3>ဤ update တွင် ပါဝင်သည်</h3>
+              <ul>
+                {features.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <p className="m-update-hint">
+            {mandatory
+              ? 'Update ဒေါင်းလုဒ် လုပ်ပြီး APK ထပ်သွင်းမှ App သုံးလို့ရမည်။'
+              : 'ဒေါင်းလုဒ်လုပ်ပြီး ထပ်သွင်းပါ။'}
+          </p>
+
+          {checkError ? <p className="m-update-error">{checkError}</p> : null}
+
           <div className="m-update-actions">
             <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={download}>
               Update ဒေါင်းလုဒ်
+            </button>
+            <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={() => void runCheck()}>
+              ထပ်စမ်းမည်
             </button>
           </div>
         </div>
@@ -123,25 +146,24 @@ export function AppUpdateBanner({ children }: AppUpdateBannerProps) {
     );
   }
 
-  return (
-    <>
-      {bannerVisible && latest ? (
-        <div className="m-app-update-banner" role="status">
-          <p className="m-app-update-banner-text">
-            ဗားရှင်း အသစ် v{latest.versionCode} ({latest.versionName})
-            {latest.source === 'firebase' ? ' · Firebase' : ''}
-          </p>
-          <div className="m-app-update-banner-actions">
-            <button type="button" className="m-app-update-btn-primary" onClick={download}>
-              ဒေါင်းလုဒ်
+  if (gate === 'blocked') {
+    return (
+      <div className="m-update-block" role="dialog" aria-modal="true">
+        <div className="m-update-card m-update-card-block">
+          <h2>ချိတ်ဆက်မှု မရပါ</h2>
+          <p className="m-update-error">{checkError || 'အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ'}</p>
+          <div className="m-update-actions">
+            <button type="button" className="m-btn m-btn-primary m-btn-block" onClick={download}>
+              Update ဒေါင်းလုဒ် (apk.html)
             </button>
-            <button type="button" className="m-app-update-btn-ghost" onClick={dismissBanner}>
-              နောက်မှ
+            <button type="button" className="m-btn m-btn-ghost m-btn-block" onClick={() => void runCheck()}>
+              ထပ်စမ်းမည်
             </button>
           </div>
         </div>
-      ) : null}
-      {children}
-    </>
-  );
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

@@ -726,6 +726,43 @@
   margin-top: 14px;
 }
 
+.m-update-checking {
+  margin: 0;
+  text-align: center;
+  color: var(--m-muted);
+}
+
+.m-update-error {
+  color: #fca5a5 !important;
+  font-size: 0.82rem !important;
+}
+
+.m-update-features {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.m-update-features h3 {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.m-update-features ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.m-update-features li + li {
+  margin-top: 4px;
+}
+
 .m-bet-auth {
   display: flex;
   flex-direction: column;

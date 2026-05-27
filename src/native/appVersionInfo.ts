@@ -7,6 +7,7 @@ export type AppVersionInfo = {
   apkUrl: string;
   apkUrlSite?: string;
   releaseNotes?: string;
+  releaseFeatures?: string[];
   forceUpdate?: boolean;
   minVersionCode?: number;
   source?: 'firebase' | 'json' | 'bundled';

@@ -19,15 +19,23 @@ export function LiveMatchChat({ match }: LiveMatchChatProps) {
   const [name, setName] = useState(() => getChatDisplayName());
   const [text, setText] = useState('');
   const [error, setError] = useState('');
+  const [connected, setConnected] = useState(false);
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setError('');
+    setConnected(false);
     const stop = subscribeLiveChat(
       roomId,
-      (next) => setMessages(next),
-      (msg) => setError(msg),
+      (next) => {
+        setConnected(true);
+        setMessages(next);
+      },
+      (msg) => {
+        setConnected(false);
+        setError(msg);
+      },
     );
     return stop;
   }, [roomId]);
@@ -79,7 +87,9 @@ export function LiveMatchChat({ match }: LiveMatchChatProps) {
     <section className="m-watch-chat" aria-label="Live chat">
       <div className="m-watch-chat-head">
         <strong>Live Chat</strong>
-        <span>{messages.length} စာ</span>
+        <span>
+          {connected ? 'ချိတ်ဆက်ပြီး' : 'ချိတ်နေသည်…'} · {messages.length} စာ
+        </span>
       </div>
 
       <div className="m-watch-chat-list" ref={listRef}>
