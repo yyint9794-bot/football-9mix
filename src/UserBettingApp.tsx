@@ -479,7 +479,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
 
   const renderSubPage = (title: string, content: ReactNode) => (
     <div className={shellClass}>
-      <div className="betting-app-shell hub-sub">
+      <div className="betting-app-shell hub-sub payment-flow">
         <header className="betting-topbar dark">
           <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
             ←

@@ -60,8 +60,12 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
 
   const selectMethod = (next: PaymentMethod) => {
     setMethod(next);
-    setStep('details');
     setStatus('');
+    if (mode === 'deposit') {
+      setStep('details');
+      return;
+    }
+    setStep('form');
   };
 
   const handleCopyNumber = async () => {
@@ -84,6 +88,16 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
     setName('');
     setTxnRef('');
     setStatus('');
+  };
+
+  const goBack = () => {
+    if (step === 'form') {
+      setStep(mode === 'deposit' ? 'details' : 'method');
+      return;
+    }
+    if (step === 'details') {
+      setStep('method');
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -119,141 +133,149 @@ export function UserPaymentPanel({ mode }: UserPaymentPanelProps) {
     }
   };
 
+  const filteredTx = transactions.filter((tx) => tx.type === mode).slice(0, 6);
+
   return (
     <div className="wallet-panel payment-panel">
-      <div className="wallet-balance-card">
-        <span>လက်ကျန်ငွေ</span>
-        <strong>{formatMmk(user.balance)}</strong>
-        <small>{user.displayName}</small>
-      </div>
+      <div className="payment-panel-body">
+        <div className="wallet-balance-card payment-balance-card">
+          <span>လက်ကျန်ငွေ</span>
+          <strong>{formatMmk(user.balance)}</strong>
+          <small>{user.displayName}</small>
+        </div>
 
-      {loading ? <p className="odds-hint">ဖတ်နေပါတယ်…</p> : null}
+        {loading ? <p className="payment-loading">ဖတ်နေပါတယ်…</p> : null}
 
-      {step === 'method' ? (
-        <section className="payment-step">
-          <h3>{mode === 'deposit' ? 'ငွေသွင်း နည်းလမ်း ရွေးပါ' : 'ငွေထုတ် နည်းလမ်း ရွေးပါ'}</h3>
-          <div className="payment-method-grid">
-            {(Object.keys(METHOD_META) as PaymentMethod[]).map((key) => (
-              <button key={key} type="button" className="payment-method-card" onClick={() => selectMethod(key)}>
-                <img src={METHOD_META[key].logo} alt={METHOD_META[key].label} />
-                <b>{METHOD_META[key].label}</b>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {step === 'details' && method ? (
-        <section className="payment-step">
-          <button type="button" className="payment-back" onClick={() => setStep('method')}>
-            ← နည်းလမ်း ပြန်ရွေးမည်
-          </button>
-          <div className="payment-admin-card">
-            <img src={METHOD_META[method].logo} alt="" className="payment-admin-logo" />
-            <div>
-              <span>Admin {METHOD_META[method].label}</span>
-              <strong>{activeNumber || 'နံပါတ် မသတ်မှတ်ရသေးပါ'}</strong>
+        {step === 'method' ? (
+          <section className="payment-step payment-step-fill">
+            <h3>{mode === 'deposit' ? 'ငွေသွင်း နည်းလမ်း ရွေးပါ' : 'ငွေထုတ် နည်းလမ်း ရွေးပါ'}</h3>
+            <div className="payment-method-grid">
+              {(Object.keys(METHOD_META) as PaymentMethod[]).map((key) => (
+                <button key={key} type="button" className="payment-method-card" onClick={() => selectMethod(key)}>
+                  <img src={METHOD_META[key].logo} alt={METHOD_META[key].label} />
+                  <b>{METHOD_META[key].label}</b>
+                </button>
+              ))}
             </div>
-            <button type="button" className="payment-copy-btn" onClick={() => void handleCopyNumber()}>
-              ကူးမည်
+          </section>
+        ) : null}
+
+        {step === 'details' && method && mode === 'deposit' ? (
+          <section className="payment-step payment-step-fill">
+            <button type="button" className="payment-back" onClick={goBack}>
+              ← နည်းလမ်း ပြန်ရွေးမည်
             </button>
-          </div>
-          <p className="payment-hint">
-            {mode === 'deposit'
-              ? 'အထက်ပါနံပါတ်သို့ လွဲပြီးမှ အောက်ပါအချက်အလက် ဖြည့်ပြီး ပို့ပါ'
-              : 'အထက်ပါ Wallet သို့ ထုတ်ယူရန် အောက်ပါအချက်အလက် ဖြည့်ပါ'}
-          </p>
-          <button type="button" className="quality-watch live-watch" onClick={() => setStep('form')}>
-            {mode === 'deposit' ? 'လွဲပြီးပါပြီ — ဖြည့်မည်' : 'ဆက်လက်ထုတ်မည်'}
-          </button>
-        </section>
-      ) : null}
+            <div className="payment-admin-card">
+              <img src={METHOD_META[method].logo} alt="" className="payment-admin-logo" />
+              <div>
+                <span>Admin {METHOD_META[method].label}</span>
+                <strong>{activeNumber || 'နံပါတ် မသတ်မှတ်ရသေးပါ'}</strong>
+              </div>
+              <button type="button" className="payment-copy-btn" onClick={() => void handleCopyNumber()}>
+                ကူးမည်
+              </button>
+            </div>
+            <p className="payment-hint">
+              အထက်ပါနံပါတ်သို့ ငွေလွဲပြီးပါက အောက်ပါ ခလုတ်နှိပ်ပြီး အချက်အလက် ဖြည့်ပါ
+            </p>
+            <button type="button" className="quality-watch live-watch payment-primary-btn" onClick={() => setStep('form')}>
+              ငွေလွဲမည်
+            </button>
+          </section>
+        ) : null}
 
-      {step === 'form' && method ? (
-        <form className="payment-form" onSubmit={handleSubmit}>
-          <button type="button" className="payment-back" onClick={() => setStep('details')}>
-            ← နောက်သို့
-          </button>
-          <p className="payment-selected">
-            {METHOD_META[method].label} · {mode === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
-          </p>
+        {step === 'form' && method ? (
+          <form className="payment-form payment-step-fill" onSubmit={handleSubmit}>
+            <button type="button" className="payment-back" onClick={goBack}>
+              ← နောက်သို့
+            </button>
+            <p className="payment-selected">
+              {METHOD_META[method].label} · {mode === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
+            </p>
 
-          <label className="search-box">
-            <span>{mode === 'deposit' ? 'သွင်းငွေ (MMK)' : 'ထုတ်ငွေ (MMK)'}</span>
-            <input
-              type="number"
-              min="1000"
-              step="1"
-              required
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          </label>
-          <label className="search-box">
-            <span>ဖုန်းနံပါတ်</span>
-            <input
-              type="tel"
-              required
-              placeholder="09xxxxxxxxx"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-            />
-          </label>
-          <label className="search-box">
-            <span>နာမည်</span>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          {mode === 'deposit' ? (
-            <label className="search-box">
-              <span>လုပ်ငန်းစဉ် နောက်ဆုံး ၆ လုံး</span>
+            {mode === 'withdraw' ? (
+              <p className="payment-hint payment-hint-light">
+                {METHOD_META[method].label} သို့ ထုတ်ယူရန် အောက်ပါအချက်အလက် ဖြည့်ပါ
+              </p>
+            ) : (
+              <p className="payment-hint payment-hint-light">လွဲပြီးပါက အောက်တွင် ဖြည့်ပြီး ပို့ပါ</p>
+            )}
+
+            <label className="search-box payment-field">
+              <span>{mode === 'deposit' ? 'သွင်းငွေ (MMK)' : 'ထုတ်ငွေ (MMK)'}</span>
+              <input
+                type="number"
+                min="1000"
+                step="1"
+                required
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+            </label>
+            <label className="search-box payment-field">
+              <span>ဖုန်းနံပါတ်</span>
+              <input
+                type="tel"
+                required
+                placeholder="09xxxxxxxxx"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            </label>
+            <label className="search-box payment-field">
+              <span>နာမည်</span>
               <input
                 type="text"
                 required
-                minLength={6}
-                maxLength={6}
-                pattern="[0-9]{6}"
-                placeholder="123456"
-                value={txnRef}
-                onChange={(event) => setTxnRef(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
               />
             </label>
-          ) : null}
+            {mode === 'deposit' ? (
+              <label className="search-box payment-field">
+                <span>လုပ်ငန်းစဉ် နောက်ဆုံး ၆ လုံး</span>
+                <input
+                  type="text"
+                  required
+                  minLength={6}
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="123456"
+                  value={txnRef}
+                  onChange={(event) => setTxnRef(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+              </label>
+            ) : null}
 
-          <button type="submit" className="quality-watch live-watch" disabled={submitting}>
-            {submitting ? 'ပို့နေပါတယ်…' : mode === 'deposit' ? 'ငွေသွင်း တောင်းဆိုမည်' : 'ငွေထုတ် တောင်းဆိုမည်'}
-          </button>
-        </form>
-      ) : null}
+            <button type="submit" className="quality-watch live-watch payment-primary-btn" disabled={submitting}>
+              {submitting ? 'ပို့နေပါတယ်…' : mode === 'deposit' ? 'ငွေသွင်း တောင်းဆိုမည်' : 'ငွေထုတ် တောင်းဆိုမည်'}
+            </button>
+          </form>
+        ) : null}
 
-      {status ? <p className="account-modal-status">{status}</p> : null}
+        {status ? <p className="account-modal-status payment-status">{status}</p> : null}
+      </div>
 
-      <div className="wallet-history">
+      <div className="wallet-history payment-history">
         <strong>လုပ်ဆောင်ချက် မှတ်တမ်း</strong>
+        {!filteredTx.length ? <p className="payment-history-empty">မှတ်တမ်း မရှိသေးပါ</p> : null}
         <div className="wallet-tx-list">
-          {transactions
-            .filter((tx) => tx.type === mode)
-            .slice(0, 8)
-            .map((tx) => (
-              <article className="wallet-tx-item" key={tx.id}>
-                <div>
-                  <b>
-                    {tx.type === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
-                    {tx.paymentMethod ? ` · ${tx.paymentMethod.toUpperCase()}` : ''}
-                  </b>
-                  <small>{new Date(tx.createdAt).toLocaleString()}</small>
-                </div>
-                <div className="wallet-tx-meta">
-                  <strong>{formatMmk(tx.amount)}</strong>
-                  <span className={`wallet-status ${tx.status}`}>{tx.status}</span>
-                </div>
-                {tx.note ? <p>{tx.note}</p> : null}
-              </article>
-            ))}
+          {filteredTx.map((tx) => (
+            <article className="wallet-tx-item" key={tx.id}>
+              <div>
+                <b>
+                  {tx.type === 'deposit' ? 'ငွေသွင်း' : 'ငွေထုတ်'}
+                  {tx.paymentMethod ? ` · ${tx.paymentMethod.toUpperCase()}` : ''}
+                </b>
+                <small>{new Date(tx.createdAt).toLocaleString()}</small>
+              </div>
+              <div className="wallet-tx-meta">
+                <strong>{formatMmk(tx.amount)}</strong>
+                <span className={`wallet-status ${tx.status}`}>{tx.status}</span>
+              </div>
+              {tx.note ? <p>{tx.note}</p> : null}
+            </article>
+          ))}
         </div>
       </div>
     </div>
