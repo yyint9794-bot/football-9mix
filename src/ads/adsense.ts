@@ -16,7 +16,9 @@ export function loadAdsenseScript(client: string) {
   }
 
   scriptPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+    const existing =
+      (document.getElementById(SCRIPT_ID) as HTMLScriptElement | null) ??
+      (document.querySelector('script[src*="adsbygoogle.js"]') as HTMLScriptElement | null);
     if (existing) {
       if (existing.dataset.loaded === 'true') {
         resolve();
