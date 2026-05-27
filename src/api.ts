@@ -1,3 +1,10 @@
+import {
+  applyScoresToMatch,
+  hasMatchScore,
+  isMatchFinished,
+  isRecentMatchTime,
+  parseMmkScoresPayload,
+} from './matchScore';
 import { enrichMatchesWithLogos } from './teamLogoIndex';
 import { resolveMissingTeamLogos } from './teamLogoResolver';
 import { extractMmkTeamLogo, normalizeLogoUrl } from './teamLogoUrl';
@@ -16,6 +23,8 @@ const MMK_ENDPOINTS = [
   '/mmk-autokyay/body-goalboung',
   '/mmk-autokyay/moung',
 ];
+
+const MMK_RESULTS_ENDPOINTS = ['/mmk-autokyay/v3/results', '/mmk-autokyay/v2/results'];
 
 type MmkTeam = {
   name?: string;
@@ -469,6 +478,11 @@ function normalizeMmkMatch(match: MmkMatch, source: string): Match {
     'မြန်မာကြေး';
   const status = String(match.status || (match.is_finished || match.completed ? 'Completed' : 'Coming Soon'));
   const mmkOdds = buildMmkOddsPayload(match);
+  const parsedScores = parseMmkScoresPayload(match as Record<string, unknown>);
+  const finishedFromApi =
+    match.is_finished === true ||
+    match.completed === true ||
+    String(match.status || '').toLowerCase().includes('completed');
 
   return {
     id: `mmk-${source}-${match.id ?? match.matchId ?? `${homeName}-${awayName}`}`,
@@ -502,14 +516,22 @@ function normalizeMmkMatch(match: MmkMatch, source: string): Match {
             : '',
     homeEngName: homeEngName,
     awayEngName: awayEngName,
-    ...(typeof match.homeScore === 'number' && typeof match.awayScore === 'number'
+    ...(parsedScores
       ? {
-          homeScore: match.homeScore,
-          awayScore: match.awayScore,
+          ...parsedScores,
           liveScoreFromApi: true,
-          startTime: match.startTime,
+          resultFromApi: finishedFromApi,
+          completed: finishedFromApi ? true : match.completed,
+          is_finished: finishedFromApi ? true : match.is_finished,
         }
-      : {}),
+      : typeof match.homeScore === 'number' && typeof match.awayScore === 'number'
+        ? {
+            homeScore: match.homeScore,
+            awayScore: match.awayScore,
+            liveScoreFromApi: true,
+            startTime: match.startTime,
+          }
+        : {}),
     price: match.price,
     goalTotal: match.goalTotal,
     goalTotalPrice: match.goalTotalPrice,
@@ -622,6 +644,96 @@ function mergeUniqueMatches(primaryMatches: Match[], extraMatches: Match[]) {
   return Array.from(merged.values());
 }
 
+function matchResultScore(streamMatch: Match, resultMatch: Match) {
+  if (getMatchKey(streamMatch) === getMatchKey(resultMatch)) {
+    return 20;
+  }
+
+  let score = 0;
+  if (getMatchTimeBucket(streamMatch.time) === getMatchTimeBucket(resultMatch.time)) {
+    score += 4;
+  }
+  if (teamsLikelySame(streamMatch, resultMatch)) {
+    score += 8;
+  }
+
+  const streamLeague = String(streamMatch.league?.name || '');
+  const resultLeague = String(resultMatch.league?.name || '');
+  if (streamLeague && resultLeague && leaguesLikelySame(streamLeague, resultLeague)) {
+    score += 5;
+  }
+
+  return score;
+}
+
+function mergeScoresInto(target: Match, source: Match): Match {
+  if (!hasMatchScore(source)) {
+    return target;
+  }
+
+  const sameTeams =
+    getMatchKey(target) === getMatchKey(source) || teamsLikelySame(target, source);
+  if (!sameTeams) {
+    return target;
+  }
+
+  return applyScoresToMatch(target, source);
+}
+
+function findBestResultMatch(streamMatch: Match, resultPool: Match[]) {
+  let best: Match | null = null;
+  let bestScore = 3;
+
+  for (const candidate of resultPool) {
+    if (!hasMatchScore(candidate)) {
+      continue;
+    }
+
+    const score = matchResultScore(streamMatch, candidate);
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+
+  return best;
+}
+
+function mergeResultsIntoMatches(matches: Match[], resultMatches: Match[]) {
+  const resultPool = resultMatches.filter((match) => hasMatchScore(match));
+  if (!resultPool.length) {
+    return matches;
+  }
+
+  const merged = matches.map((match) => {
+    const exact = resultPool.find((result) => getMatchKey(result) === getMatchKey(match));
+    const best = findBestResultMatch(match, resultPool);
+    const source = exact ?? best;
+    return source ? mergeScoresInto(match, source) : match;
+  });
+
+  const seen = new Set(merged.map((match) => getMatchKey(match)));
+  for (const result of resultPool) {
+    if (!isMatchFinished(result) || !hasMatchScore(result)) {
+      continue;
+    }
+
+    const key = getMatchKey(result);
+    if (seen.has(key)) {
+      continue;
+    }
+
+    if (!isRecentMatchTime(result.time)) {
+      continue;
+    }
+
+    merged.push(result);
+    seen.add(key);
+  }
+
+  return merged;
+}
+
 export async function getFootballMatches(
   signal?: AbortSignal,
   onUpdate?: (matches: Match[]) => void,
@@ -635,6 +747,19 @@ export async function getFootballMatches(
     if (result.status === 'fulfilled') {
       matches = mergeUniqueMatches(matches, result.value);
     }
+  }
+
+  const resultResponses = await Promise.allSettled(
+    MMK_RESULTS_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)),
+  );
+  const resultMatches: Match[] = [];
+  for (const result of resultResponses) {
+    if (result.status === 'fulfilled') {
+      resultMatches.push(...result.value);
+    }
+  }
+  if (resultMatches.length) {
+    matches = mergeResultsIntoMatches(matches, resultMatches);
   }
 
   matches = enrichMatchesWithLogos(matches);

@@ -17,11 +17,13 @@ import {
   formatGoalSideLabel,
 } from './betting/odds';
 import { parseKickoffTime } from './liveMatch';
+import { formatMatchScore, hasMatchScore, isMatchFinished } from './matchScore';
+import { MatchScoreBadge } from './MatchScoreBadge';
 import { preloadMatchLogos } from './teamLogoIndex';
 import { LeagueLogo, TeamLogo } from './TeamLogo';
 import type { Match } from './types';
 
-const filters = ['အားလုံး', 'တိုက်ရိုက်', 'လာမည့်ပွဲ', 'ကြည့်ရှုရနိုင်'] as const;
+const filters = ['အားလုံး', 'တိုက်ရိုက်', 'လာမည့်ပွဲ', 'ကြည့်ရှုရနိုင်', 'ပွဲပြီး'] as const;
 type Filter = (typeof filters)[number];
 import type { OddsSection } from './betting/types';
 
@@ -167,15 +169,7 @@ function isStreamLive(match: Match) {
 }
 
 function isCompletedMatch(match: Match) {
-  const status = String(match.status).toLowerCase();
-  return (
-    status.includes('finished') ||
-    status.includes('completed') ||
-    status.includes('ft') ||
-    status.includes('ended') ||
-    match.is_finished === true ||
-    match.completed === true
-  );
+  return isMatchFinished(match);
 }
 
 function isWithinLiveWindow(match: Match) {
@@ -338,10 +332,11 @@ function App() {
         activeFilter === 'အားလုံး' ||
         (activeFilter === 'တိုက်ရိုက်' && isLiveMatch(match)) ||
         (activeFilter === 'လာမည့်ပွဲ' && String(match.status).toLowerCase().includes('coming')) ||
-        (activeFilter === 'ကြည့်ရှုရနိုင်' && hasStream(match));
+        (activeFilter === 'ကြည့်ရှုရနိုင်' && hasStream(match)) ||
+        (activeFilter === 'ပွဲပြီး' && isMatchFinished(match) && hasMatchScore(match));
       const matchesLeague = showOddsOnly || activeLeague === ALL_LEAGUES || match.league.name === activeLeague;
       const matchesOdds = !showOddsOnly || extractMyanmarOdds(match).length > 0;
-      const matchesDate = isCurrentOrFutureMatch(match);
+      const matchesDate = activeFilter === 'ပွဲပြီး' || isCurrentOrFutureMatch(match);
 
       return matchesQuery && matchesFilter && matchesLeague && matchesOdds && matchesDate;
     });
@@ -349,19 +344,31 @@ function App() {
 
   const visibleMatches = useMemo(() => [...filteredMatches].sort(compareFeaturedMatches), [filteredMatches]);
   const featuredMatch = visibleMatches.find((match) => isLiveMatch(match) && hasStream(match)) ?? visibleMatches[0];
-  const sortedDateEntries = groupMatchesByDate(visibleMatches)
-    .filter(([dateKey]) => dateKey === 'undated' || dateKey >= getTodayDateKey())
-    .map(([dateKey, dateMatches]) => {
-    const leagueEntries = Object.entries(groupMatchesByLeague(dateMatches)).sort(
-      ([leagueA, matchesA], [leagueB, matchesB]) =>
-        Number(matchesB.some(isLiveMatch)) - Number(matchesA.some(isLiveMatch)) ||
-        getLeaguePriority(leagueA) - getLeaguePriority(leagueB) ||
-        matchesB.length - matchesA.length ||
-        leagueA.localeCompare(leagueB),
-    );
+  const sortedDateEntries = useMemo(() => {
+    const grouped = groupMatchesByDate(visibleMatches);
+    const dated =
+      activeFilter === 'ပွဲပြီး'
+        ? grouped
+        : grouped.filter(([dateKey]) => dateKey === 'undated' || dateKey >= getTodayDateKey());
 
-    return { dateKey, dateMatches, leagueEntries };
-  });
+    const entries = dated.map(([dateKey, dateMatches]) => {
+      const leagueEntries = Object.entries(groupMatchesByLeague(dateMatches)).sort(
+        ([leagueA, matchesA], [leagueB, matchesB]) =>
+          Number(matchesB.some(isLiveMatch)) - Number(matchesA.some(isLiveMatch)) ||
+          getLeaguePriority(leagueA) - getLeaguePriority(leagueB) ||
+          matchesB.length - matchesA.length ||
+          leagueA.localeCompare(leagueB),
+      );
+
+      return { dateKey, dateMatches, leagueEntries };
+    });
+
+    if (activeFilter === 'ပွဲပြီး') {
+      return entries.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+    }
+
+    return entries;
+  }, [activeFilter, visibleMatches]);
   const liveCount = matches.filter(isLiveMatch).length;
   const streamCount = matches.filter(hasStream).length;
   const oddsCount = matches.filter((match) => extractMyanmarOdds(match).length > 0).length;
@@ -687,6 +694,7 @@ function LivePlayerModal({
             {match.homeTeam.name} vs {match.awayTeam.name}
           </strong>
           <small>{match.league.name}</small>
+          <MatchScoreBadge match={match} showHalfTime className="match-score-badge live" />
         </div>
         <LiveStreamPlayer match={match} />
         <MatchOdds match={match} compact onBetClick={onOpenAccount} />
@@ -763,12 +771,18 @@ function FeaturedMatch({
       </div>
       <div className="versus-layout">
         <TeamBlock teamName={match.homeTeam.name} logo={match.homeTeam.logo} engName={String(match.homeEngName || '')} />
-        <span className="vs-badge">VS</span>
+        {formatMatchScore(match) ? (
+          <MatchScoreBadge match={match} showHalfTime className="match-score-badge featured" />
+        ) : (
+          <span className="vs-badge">VS</span>
+        )}
         <TeamBlock teamName={match.awayTeam.name} logo={match.awayTeam.logo} engName={String(match.awayEngName || '')} />
       </div>
       <div className="match-meta">
         <strong>{match.time}</strong>
-        <span className={streamAvailable ? 'live-badge' : 'soon-badge'}>{match.status}</span>
+        <span className={isMatchFinished(match) ? 'soon-badge' : streamAvailable ? 'live-badge' : 'soon-badge'}>
+          {isMatchFinished(match) ? 'ပွဲပြီး' : match.status}
+        </span>
       </div>
       <MatchOdds match={match} onBetClick={onOpenAccount} />
     </aside>
@@ -801,12 +815,17 @@ function MatchCard({
           <TeamLogo src={match.homeTeam.logo} name={match.homeTeam.name} engName={String(match.homeEngName || '')} />
           <strong>{match.homeTeam.name}</strong>
         </div>
-        <span className="vs-mini">VS</span>
+        {formatMatchScore(match) ? (
+          <MatchScoreBadge match={match} className="match-score-badge card" />
+        ) : (
+          <span className="vs-mini">VS</span>
+        )}
         <div className="team-side">
           <TeamLogo src={match.awayTeam.logo} name={match.awayTeam.name} engName={String(match.awayEngName || '')} />
           <strong>{match.awayTeam.name}</strong>
         </div>
       </div>
+      {isMatchFinished(match) ? <p className="match-finished-label">ပွဲပြီး · ရလဒ် API</p> : null}
       <MatchOdds match={match} compact onBetClick={onOpenAccount} />
       {variants.length ? (
         <div className="stream-actions">

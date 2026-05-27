@@ -15,6 +15,8 @@ import type { BetPick, BetSide, BettingMatchRow } from './betting/types';
 import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
 import { UserBetSidebar } from './UserBetSidebar';
+import { MatchResultsPanel } from './MatchResultsPanel';
+import { MatchScoreBadge } from './MatchScoreBadge';
 import { UserBetsPanel } from './UserBetsPanel';
 import { UserChangePasswordSheet } from './UserChangePasswordSheet';
 import {
@@ -376,7 +378,10 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
 
     return (
       <article className={cardClass} key={row.match.id}>
-        <p className="bet-kickoff">ပွဲချိန် : {row.kickoffLabel}</p>
+        <p className="bet-kickoff">
+          ပွဲချိန် : {row.kickoffLabel}
+          <MatchScoreBadge match={row.match} className="match-score-badge bet" />
+        </p>
 
         {row.body ? (
           <div className={`bet-grid-row body favor-${bodyGivingSide}`}>
@@ -507,7 +512,16 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   }
 
   if (screen === 'results') {
-    return renderSubPage('ပွဲပြီးရလဒ်', <UserBetsPanel mode="settled" />);
+    return renderSubPage(
+      'ပွဲပြီးရလဒ်',
+      <div className="bet-results-page">
+        <MatchResultsPanel matches={matches} loading={loading} />
+        <section className="bet-settled-section">
+          <h3>လောင်းရလဒ်</h3>
+          <UserBetsPanel mode="settled" />
+        </section>
+      </div>,
+    );
   }
 
   if (screen === 'body-goal' || screen === 'maung') {
