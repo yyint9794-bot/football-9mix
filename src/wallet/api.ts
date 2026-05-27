@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import type {
   PaymentMethod,
   WalletBet,
@@ -5,6 +6,17 @@ import type {
   WalletTransaction,
   WalletUser,
 } from './types';
+
+function walletApiOrigin() {
+  const configured = String(import.meta.env.VITE_WALLET_API_ORIGIN || '').trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+  if (Capacitor.isNativePlatform()) {
+    return 'https://ballpwal.org';
+  }
+  return '';
+}
 
 export type { PaymentMethod };
 
@@ -98,7 +110,7 @@ async function walletFetch<T>(path: string, options: RequestInit = {}): Promise<
 
   let response: Response;
   try {
-    response = await fetch(`/api/wallet/${path}`, {
+    response = await fetch(`${walletApiOrigin()}/api/wallet/${path}`, {
       ...options,
       headers,
       signal: controller.signal,

@@ -11,12 +11,7 @@ export function useMatchesFeed() {
     let disposed = false;
 
     const load = (signal?: AbortSignal) => {
-      getFootballMatches(signal, (partial) => {
-        if (!disposed && partial.length) {
-          setMatches(partial);
-          setLoading(false);
-        }
-      })
+      getFootballMatches(signal)
         .then((next) => {
           if (!disposed) {
             setMatches(next);

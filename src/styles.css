@@ -1146,6 +1146,19 @@ a.primary-button.download-hero-btn,
   text-align: center;
 }
 
+.mobile-app-mode .video-ad-overlay {
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.mobile-app-mode .live-player-card {
+  margin-top: 0;
+}
+
+.mobile-app-mode .live-player-toolbar {
+  padding-top: max(4px, env(safe-area-inset-top));
+}
+
 .live-player-toolbar {
   display: flex;
   align-items: center;

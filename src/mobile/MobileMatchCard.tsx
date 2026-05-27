@@ -1,3 +1,4 @@
+import { canWatchMatch } from '../api';
 import { formatMatchScore, hasMatchScore } from '../matchScore';
 import { TeamLogo } from '../TeamLogo';
 import { isLiveMatch } from '../matchUi';
@@ -8,11 +9,24 @@ type MobileMatchCardProps = {
   onWatch: (match: Match) => void;
   onBet?: () => void;
   compact?: boolean;
+  kickoffLabel?: string;
+  showWatch?: boolean;
+  forceWatch?: boolean;
 };
 
-export function MobileMatchCard({ match, onWatch, onBet, compact = false }: MobileMatchCardProps) {
+export function MobileMatchCard({
+  match,
+  onWatch,
+  onBet,
+  compact = false,
+  kickoffLabel,
+  showWatch = true,
+  forceWatch = false,
+}: MobileMatchCardProps) {
   const live = isLiveMatch(match);
   const score = formatMatchScore(match);
+  const watchable = canWatchMatch(match);
+  const timeLabel = kickoffLabel || match.time;
 
   return (
     <article className={`m-match-card${compact ? ' compact' : ''}${live ? ' live' : ''}`}>
@@ -38,7 +52,7 @@ export function MobileMatchCard({ match, onWatch, onBet, compact = false }: Mobi
           ) : (
             <span className="m-vs">VS</span>
           )}
-          <small>{match.time}</small>
+          <small>{timeLabel}</small>
         </div>
 
         <div className="m-team">
@@ -52,16 +66,23 @@ export function MobileMatchCard({ match, onWatch, onBet, compact = false }: Mobi
         </div>
       </div>
 
-      <div className="m-match-actions">
-        <button type="button" className="m-btn m-btn-primary" onClick={() => onWatch(match)}>
-          {live ? 'တိုက်ရိုက်ကြည့်' : 'ကြည့်မည်'}
-        </button>
-        {onBet ? (
-          <button type="button" className="m-btn m-btn-ghost" onClick={onBet}>
-            လောင်းမည်
+      {showWatch || forceWatch ? (
+        <div className="m-match-actions">
+          <button
+            type="button"
+            className="m-btn m-btn-primary"
+            disabled={!watchable}
+            onClick={() => watchable && onWatch(match)}
+          >
+            {watchable ? (live || forceWatch ? 'တိုက်ရိုက်ကြည့်' : 'ကြည့်မည်') : 'ကြည့်ရှုလို့ မရသေးပါ'}
           </button>
-        ) : null}
-      </div>
+          {onBet ? (
+            <button type="button" className="m-btn m-btn-ghost" onClick={onBet}>
+              လောင်းမည်
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }

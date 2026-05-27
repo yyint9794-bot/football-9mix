@@ -4,6 +4,7 @@ import {
   getFootballMatches,
   getStreamVariants,
   groupMatchesByLeague,
+  canWatchMatch,
   hasStream,
   isOddsClosed,
   resolveLeagueLogoForGroup,
@@ -223,16 +224,7 @@ function App() {
     let disposed = false;
 
     const loadMatches = (signal?: AbortSignal) => {
-      getFootballMatches(signal, (partialMatches) => {
-        if (disposed) {
-          return;
-        }
-
-        setMatches(partialMatches);
-        if (partialMatches.length) {
-          setLoading(false);
-        }
-      })
+      getFootballMatches(signal)
         .then((nextMatches) => {
           if (!disposed) {
             setMatches(nextMatches);
@@ -323,7 +315,7 @@ function App() {
         activeFilter === 'အားလုံး' ||
         (activeFilter === 'တိုက်ရိုက်' && isLiveMatch(match)) ||
         (activeFilter === 'လာမည့်ပွဲ' && String(match.status).toLowerCase().includes('coming')) ||
-        (activeFilter === 'ကြည့်ရှုရနိုင်' && hasStream(match)) ||
+        (activeFilter === 'ကြည့်ရှုရနိုင်' && canWatchMatch(match)) ||
         (activeFilter === 'ပွဲပြီး' && isMatchFinished(match) && hasMatchScore(match));
       const matchesLeague = showOddsOnly || activeLeague === ALL_LEAGUES || match.league.name === activeLeague;
       const matchesOdds = !showOddsOnly || extractMyanmarOdds(match).length > 0;
@@ -360,8 +352,8 @@ function App() {
 
     return entries;
   }, [activeFilter, visibleMatches]);
-  const liveCount = matches.filter(isLiveMatch).length;
-  const streamCount = matches.filter(hasStream).length;
+  const liveCount = matches.filter((match) => isLiveMatch(match) && canWatchMatch(match)).length;
+  const streamCount = matches.filter(canWatchMatch).length;
   const oddsCount = matches.filter((match) => extractMyanmarOdds(match).length > 0).length;
 
   function openMyanmarOdds() {
@@ -744,7 +736,7 @@ function FeaturedMatch({
     return <div className="featured-card skeleton" />;
   }
 
-  const streamAvailable = hasStream(match);
+  const streamAvailable = canWatchMatch(match);
 
   return (
     <aside className={streamAvailable ? 'featured-card live-card' : 'featured-card'}>
@@ -781,8 +773,8 @@ function MatchCard({
   onPlay: (match: Match) => void;
   onOpenAccount: () => void;
 }) {
-  const streamAvailable = hasStream(match);
-  const live = isLiveMatch(match);
+  const streamAvailable = canWatchMatch(match);
+  const live = isLiveMatch(match) && streamAvailable;
   const variants = getStreamVariants(match);
 
   return (

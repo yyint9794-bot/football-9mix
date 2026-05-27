@@ -317,6 +317,51 @@ export function hasMyanmarOdds(match: Match) {
   );
 }
 
+function mergeStreamsInto(target: Match, source: Match): Match {
+  if (!hasStream(source)) {
+    return target;
+  }
+
+  if (!hasStream(target)) {
+    return {
+      ...target,
+      streamLinks: { ...(source.streamLinks ?? {}) },
+      status: target.status || source.status,
+    };
+  }
+
+  return {
+    ...target,
+    streamLinks: {
+      ...(target.streamLinks ?? {}),
+      ...(source.streamLinks ?? {}),
+    },
+  };
+}
+
+function matchStreamScore(streamMatch: Match, candidate: Match) {
+  return matchOddsScore(streamMatch, candidate);
+}
+
+function findBestStreamMatch(target: Match, streamPool: Match[]) {
+  let best: Match | null = null;
+  let bestScore = 11;
+
+  for (const candidate of streamPool) {
+    if (!hasStream(candidate)) {
+      continue;
+    }
+
+    const score = matchStreamScore(target, candidate);
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+
+  return best;
+}
+
 function mergeOddsInto(target: Match, source: Match): Match {
   if (!hasMyanmarOdds(source)) {
     return target;
@@ -654,11 +699,20 @@ function mergeUniqueMatches(primaryMatches: Match[], extraMatches: Match[]) {
     }
   }
 
+  const streamPool = primaryMatches.filter((match) => hasStream(match));
+
   for (const [key, streamMatch] of merged) {
     const exactOdds = oddsPool.find((mmk) => getMatchKey(mmk) === key);
     const bestOdds = exactOdds ?? findBestOddsMatch(streamMatch, oddsPool);
     if (bestOdds) {
       merged.set(key, mergeOddsInto(streamMatch, bestOdds));
+    }
+
+    if (!hasStream(merged.get(key)!)) {
+      const bestStream = findBestStreamMatch(merged.get(key)!, streamPool);
+      if (bestStream) {
+        merged.set(key, mergeStreamsInto(merged.get(key)!, bestStream));
+      }
     }
   }
 
@@ -684,7 +738,14 @@ function mergeUniqueMatches(primaryMatches: Match[], extraMatches: Match[]) {
     }
 
     if (merged.has(mmkKey)) {
-      merged.set(mmkKey, mergeOddsInto(merged.get(mmkKey)!, mmk));
+      let combined = mergeOddsInto(merged.get(mmkKey)!, mmk);
+      if (!hasStream(combined)) {
+        const bestStream = findBestStreamMatch(combined, streamPool);
+        if (bestStream) {
+          combined = mergeStreamsInto(combined, bestStream);
+        }
+      }
+      merged.set(mmkKey, combined);
       attachedMmkKeys.add(mmkKey);
       continue;
     }
@@ -1021,6 +1082,18 @@ export function getStreamVariants(match: Match): StreamVariant[] {
 
 export function hasStream(match: Match) {
   return getStreamVariants(match).length > 0;
+}
+
+export function canWatchMatch(match: Match) {
+  const status = String(match.status || '').toLowerCase();
+  const finished =
+    status.includes('finished') ||
+    status.includes('completed') ||
+    status.includes('ft') ||
+    match.completed === true ||
+    match.is_finished === true;
+
+  return hasStream(match) && !finished;
 }
 
 export function getStreamUrl(match: Match, preferredQuality?: StreamQuality): string {

@@ -2,19 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { getAppPath } from '../navigation';
 import { useAuth } from '../wallet/AuthContext';
 import type { Match } from '../types';
+import { MobileAppChrome } from './MobileAppChrome';
 import { MobileBetScreen } from './MobileBetScreen';
+import { MobileFinishedScreen } from './MobileFinishedScreen';
 import { MobileHomeScreen } from './MobileHomeScreen';
 import { MobileLiveScreen } from './MobileLiveScreen';
 import { MobileWalletScreen } from './MobileWalletScreen';
 import { MobileWatchScreen } from './MobileWatchScreen';
 import { getMobileTabFromPath, navigateMobileTab, type MobileTab } from './mobileNav';
 import { useMatchesFeed } from './useMatchesFeed';
-import { SiteAnnouncementBar } from '../SiteAnnouncementBar';
 import './mobile.css';
 
 const TABS: Array<{ id: MobileTab; label: string; icon: string }> = [
   { id: 'home', label: 'ပင်မ', icon: '⌂' },
-  { id: 'live', label: 'တိုက်ရိုက်', icon: '▶' },
+  { id: 'live', label: 'တိုက်ရိုက်ကြည့်ရန်', icon: '▶' },
+  { id: 'finished', label: 'ပြီးခဲ့', icon: '✓' },
   { id: 'bet', label: '9Mix', icon: '⚽' },
   { id: 'wallet', label: 'ငွေ', icon: '◉' },
 ];
@@ -61,54 +63,40 @@ export function MobileApp() {
 
   return (
     <div className="mobile-app">
-      <header className="m-app-header">
-        <div className="m-brand">
-          <img src="/logo.png" alt="" className="m-brand-logo" />
-          <div>
-            <strong>
-              <span className="m-brand-accent">9</span>Mix Football
-            </strong>
-            <small>Mobile App</small>
-          </div>
-        </div>
-        <a className="m-web-link" href="/">
-          Web
-        </a>
-      </header>
+      <MobileAppChrome>
+        <main className="m-app-main">
+          {tab === 'home' ? (
+            <MobileHomeScreen
+              matches={matches}
+              loading={loading}
+              error={error}
+              onWatch={setPlayingMatch}
+              onBet={() => selectTab('bet')}
+              onRefresh={() => void refresh()}
+            />
+          ) : null}
+          {tab === 'live' ? (
+            <MobileLiveScreen matches={matches} loading={loading} onWatch={setPlayingMatch} />
+          ) : null}
+          {tab === 'finished' ? <MobileFinishedScreen /> : null}
+          {tab === 'bet' ? <MobileBetScreen onBack={() => selectTab('home')} /> : null}
+          {tab === 'wallet' ? <MobileWalletScreen /> : null}
+        </main>
 
-      {tab === 'home' ? <SiteAnnouncementBar slot="web" /> : null}
-
-      <main className="m-app-main">
-        {tab === 'home' ? (
-          <MobileHomeScreen
-            matches={matches}
-            loading={loading}
-            error={error}
-            onWatch={setPlayingMatch}
-            onBet={() => selectTab('bet')}
-            onRefresh={() => void refresh()}
-          />
-        ) : null}
-        {tab === 'live' ? (
-          <MobileLiveScreen matches={matches} loading={loading} onWatch={setPlayingMatch} />
-        ) : null}
-        {tab === 'bet' ? <MobileBetScreen onBack={() => selectTab('home')} /> : null}
-        {tab === 'wallet' ? <MobileWalletScreen /> : null}
-      </main>
-
-      <nav className={hideTabBar ? 'm-tab-bar is-hidden' : 'm-tab-bar'} aria-label="Mobile navigation">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={tab === item.id ? 'm-tab active' : 'm-tab'}
-            onClick={() => selectTab(item.id)}
-          >
-            <span className="m-tab-icon">{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+        <nav className={hideTabBar ? 'm-tab-bar is-hidden' : 'm-tab-bar'} aria-label="Mobile navigation">
+          {TABS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={tab === item.id ? 'm-tab active' : 'm-tab'}
+              onClick={() => selectTab(item.id)}
+            >
+              <span className="m-tab-icon">{item.icon}</span>
+              <span className="m-tab-label">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </MobileAppChrome>
     </div>
   );
 }

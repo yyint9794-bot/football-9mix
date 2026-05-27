@@ -1,4 +1,4 @@
-export type MobileTab = 'home' | 'live' | 'bet' | 'wallet';
+export type MobileTab = 'home' | 'live' | 'finished' | 'bet' | 'wallet';
 
 export function getMobileTabFromPath(path: string): MobileTab {
   const normalized = path.replace(/\/+$/, '') || '/';
@@ -7,6 +7,9 @@ export function getMobileTabFromPath(path: string): MobileTab {
   }
   if (normalized === '/app/live') {
     return 'live';
+  }
+  if (normalized === '/app/finished') {
+    return 'finished';
   }
   if (normalized === '/app/bet') {
     return 'bet';

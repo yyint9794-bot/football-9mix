@@ -1,8 +1,10 @@
 import { hasStream } from './api';
-import { extractMyanmarOdds } from './betting/odds';
+import { extractMyanmarOdds, formatKickoffLabel } from './betting/odds';
 import { parseKickoffTime } from './liveMatch';
-import { isMatchFinished } from './matchScore';
+import { hasMatchScore, isMatchFinished } from './matchScore';
 import type { Match } from './types';
+
+export { formatKickoffLabel };
 
 export function parseMatchTime(time: string) {
   return parseKickoffTime(time);
@@ -80,6 +82,28 @@ export function isLiveMatch(match: Match) {
     hasStream(match) &&
     (status === 'active' || status.includes('1h') || status.includes('2h') || status.includes('live'))
   );
+}
+
+export function canWatchMatch(match: Match) {
+  return hasStream(match) && !isCompletedMatch(match);
+}
+
+export function isUpcomingMatch(match: Match) {
+  if (isCompletedMatch(match) || isLiveMatch(match)) {
+    return false;
+  }
+
+  const start = getMatchKickoffDate(match);
+  if (!start) {
+    const status = String(match.status || '').toLowerCase();
+    return status.includes('coming') || status.includes('scheduled') || status.includes('not started');
+  }
+
+  return start.getTime() > Date.now() - 10 * 60 * 1000;
+}
+
+export function isFinishedResultMatch(match: Match) {
+  return isCompletedMatch(match) && hasMatchScore(match);
 }
 
 export function isCurrentOrFutureMatch(match: Match) {
