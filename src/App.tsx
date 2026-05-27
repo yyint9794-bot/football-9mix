@@ -8,7 +8,7 @@ import {
   isOddsClosed,
   resolveLeagueLogoForGroup,
 } from './api';
-import { openAdminPage, openBetPage } from './navigation';
+import { openBetPage } from './navigation';
 import { useAuth } from './wallet/AuthContext';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
 import {
@@ -404,13 +404,8 @@ function App() {
             </div>
           </div>
           <div className="top-actions">
-            {user?.role === 'admin' ? (
-              <button type="button" className="ghost-button" onClick={openAdminPage}>
-                Admin
-              </button>
-            ) : null}
             <button type="button" className="ghost-button" onClick={openBetPage}>
-              လောင်းမှု
+              အကောင့်
             </button>
             <a className="download-button" href="#matches">
               အက်ပ်ဒေါင်းလုဒ်
@@ -445,18 +440,6 @@ function App() {
                   <span className="menu-live-dot" />
                   Telegram ဆက်သွယ်ရန်
                 </a>
-                {user?.role === 'admin' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      openAdminPage();
-                    }}
-                  >
-                    <span className="menu-live-dot" />
-                    Admin Panel
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -493,7 +476,7 @@ function App() {
           <FeaturedMatch
             match={featuredMatch}
             loading={loading}
-            onOpenAccount={openAdminPage}
+            onOpenAccount={openBetPage}
           />
         </div>
       </section>
@@ -607,7 +590,7 @@ function App() {
                           setPlayingMatch(selectedMatch);
                           setPlaySession((session) => session + 1);
                         }}
-                        onOpenAccount={openAdminPage}
+                        onOpenAccount={openBetPage}
                       />
                     ))}
                   </div>
@@ -630,7 +613,7 @@ function App() {
           key={playSession}
           match={playingMatch}
           onClose={() => setPlayingMatch(null)}
-          onOpenAccount={openAdminPage}
+          onOpenAccount={openBetPage}
         />
       ) : null}
       {showVideoAd ? <VideoAdModal onClose={() => setShowVideoAd(false)} /> : null}
