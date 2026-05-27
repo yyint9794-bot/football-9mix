@@ -1,0 +1,46 @@
+name: Deploy site files
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public/app-version.json'
+      - 'public/_redirects'
+      - 'public/_headers'
+      - 'src/**'
+      - 'scripts/**'
+      - 'index.html'
+      - 'package.json'
+
+jobs:
+  verify-and-hint:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Verify app-version in dist
+        run: |
+          node -e "
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('dist/app-version.json','utf8'));
+          console.log('dist app-version:', j.versionCode, j.versionName);
+          if (j.versionCode < 6) process.exit(1);
+          "
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=football-9mix
