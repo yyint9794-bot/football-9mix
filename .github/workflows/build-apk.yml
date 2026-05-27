@@ -1,0 +1,40 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+      - run: npm run android:apk
+
+      - name: Commit APK and version files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/9mix-football.apk public/app-version.json src/native/publishedVersion.ts src/appDownload.ts functions/_generated/appVersion.mjs android/app/build.gradle
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          NEW_CODE=$(node -p "Number(/versionCode\\s+(\\d+)/.exec(require('fs').readFileSync('android/app/build.gradle','utf8'))?.[1] ?? 0)")
+          git commit -m "ci: build APK v${NEW_CODE} [skip apk-build]"
+          git push

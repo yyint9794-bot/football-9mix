@@ -35,16 +35,8 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Build web + Android APK
-        run: npm run android:apk
+      - name: Build web (APK from repo — Android build on workflow_dispatch only)
+        run: npm run build
 
       - name: Commit APK and web download sync
         run: |
