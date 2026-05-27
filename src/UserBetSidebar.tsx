@@ -1,10 +1,13 @@
 import type { WalletUser } from './wallet/types';
 
+const TELEGRAM_URL = import.meta.env.VITE_TELEGRAM_URL ?? 'https://t.me/livefootball902';
+
 type UserBetSidebarProps = {
   open: boolean;
   user: WalletUser;
   onClose: () => void;
-  onNavigate: (screen: 'hub' | 'open-bets' | 'results' | 'deposit' | 'withdraw') => void;
+  onChangePassword: () => void;
+  onChooseLanguage: () => void;
   onLogout: () => void;
 };
 
@@ -18,7 +21,14 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export function UserBetSidebar({ open, user, onClose, onNavigate, onLogout }: UserBetSidebarProps) {
+export function UserBetSidebar({
+  open,
+  user,
+  onClose,
+  onChangePassword,
+  onChooseLanguage,
+  onLogout,
+}: UserBetSidebarProps) {
   if (!open) {
     return null;
   }
@@ -39,39 +49,42 @@ export function UserBetSidebar({ open, user, onClose, onNavigate, onLogout }: Us
         </header>
 
         <nav className="bet-sidebar-nav">
-          <button type="button" onClick={() => onNavigate('open-bets')}>
-            <span>📋</span>
-            <b>လောင်းထားသောပွဲများ</b>
+          <button type="button" onClick={onChangePassword}>
+            <span className="bet-sidebar-icon lock" aria-hidden />
+            <b>စကားဝှက် ပြောင်းရန်</b>
             <span className="bet-sidebar-arrow" aria-hidden>
               ›
             </span>
           </button>
-          <button type="button" onClick={() => onNavigate('results')}>
-            <span>🏁</span>
-            <b>ပွဲပြီးရလဒ်</b>
+          <button type="button" onClick={onChooseLanguage}>
+            <span className="bet-sidebar-icon globe" aria-hidden />
+            <b>ဘာသာစကား ရွေးရန်</b>
+            <span className="bet-sidebar-flag" aria-hidden>
+              🇲🇲
+            </span>
             <span className="bet-sidebar-arrow" aria-hidden>
               ›
             </span>
           </button>
-          <button type="button" onClick={() => onNavigate('deposit')}>
-            <span>💵</span>
-            <b>ငွေသွင်း</b>
+          <a
+            className="bet-sidebar-link"
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            onClick={onClose}
+          >
+            <span className="bet-sidebar-icon telegram" aria-hidden />
+            <b>Telegram ဆက်သွယ်ရန်</b>
             <span className="bet-sidebar-arrow" aria-hidden>
               ›
             </span>
-          </button>
-          <button type="button" onClick={() => onNavigate('withdraw')}>
-            <span>💸</span>
-            <b>ငွေထုတ်</b>
-            <span className="bet-sidebar-arrow" aria-hidden>
-              ›
-            </span>
-          </button>
+          </a>
         </nav>
 
         <footer className="bet-sidebar-foot">
-          <small>9Mix Betting v1</small>
+          <small>Version 1.0.0</small>
           <button type="button" className="bet-sidebar-logout" onClick={() => void onLogout()}>
+            <span className="bet-sidebar-icon logout" aria-hidden />
             ထွက်မည်
           </button>
         </footer>

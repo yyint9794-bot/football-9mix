@@ -110,6 +110,32 @@ export async function walletMe(token) {
   return { user: publicUser(user) };
 }
 
+export async function walletChangePassword(token, currentPassword, newPassword) {
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return { error: 'Session မရှိပါ' };
+  }
+
+  const current = String(currentPassword || '');
+  const next = String(newPassword || '').trim();
+  if (!current || !next) {
+    return { error: 'စကားဝှက် ထည့်ပါ' };
+  }
+  if (next.length < 4) {
+    return { error: 'စကားဝှက် အနည်းဆုံး ၄ လုံး' };
+  }
+
+  const db = await readDbNormalized();
+  const record = db.users.find((entry) => entry.id === user.id);
+  if (!record || !verifyPassword(current, record.passwordHash)) {
+    return { error: 'လက်ရှိ Password မှားနေပါတယ်' };
+  }
+
+  record.passwordHash = hashPassword(next);
+  await writeDb(db);
+  return { ok: true };
+}
+
 export async function walletAcceptTerms(token) {
   const user = await getUserFromToken(token);
   if (!user) {

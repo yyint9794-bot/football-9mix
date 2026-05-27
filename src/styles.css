@@ -2722,8 +2722,9 @@ a {
   display: flex;
   flex-direction: column;
   grid-template-rows: none;
-  height: 100%;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: #fff;
 }
 
@@ -2733,25 +2734,34 @@ a {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
 .bet-odds-screen .bet-list {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0 8px 8px;
+  padding: 0 8px 12px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .bet-odds-screen .bet-footer {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: 50;
   flex-shrink: 0;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .bet-odds-screen .bet-status-toast {
-  flex-shrink: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 49;
   margin: 0;
   padding: 8px 12px;
   background: #14532d;
@@ -2762,14 +2772,36 @@ a {
 }
 
 .betting-app-shell.hub {
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
+  grid-template-rows: none;
+  min-height: 100dvh;
+  height: auto;
   background-color: #07111f;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.betting-app-shell.hub::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(34vh, 240px);
   background-image:
-    linear-gradient(180deg, rgba(7, 17, 31, 0.72) 0%, rgba(7, 17, 31, 0.35) 38%, rgba(7, 17, 31, 0.1) 68%),
+    linear-gradient(180deg, rgba(7, 17, 31, 0.92) 0%, rgba(7, 17, 31, 0.35) 45%, transparent 100%),
     url('/images/hub-bg.png');
   background-repeat: no-repeat;
   background-position: center bottom;
   background-size: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.betting-app-shell.hub > * {
+  position: relative;
+  z-index: 1;
 }
 
 .betting-topbar,
@@ -2889,9 +2921,9 @@ a {
 }
 
 .betting-hub-main {
-  align-self: start;
+  flex: 0 0 auto;
   width: 100%;
-  padding: 0 14px 10px;
+  padding: 0 14px max(16px, env(safe-area-inset-bottom));
 }
 
 .betting-balance-card {
@@ -2994,13 +3026,11 @@ a {
 }
 
 .betting-hint {
-  align-self: end;
-  margin: auto 14px 16px;
+  margin: 0 14px 12px;
   color: #cbd5e1;
   font-size: 0.72rem;
   line-height: 1.5;
   text-align: center;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 
 .bet-odds-screen .bet-loading,
@@ -3404,14 +3434,21 @@ a {
 }
 
 .betting-app-page {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   width: 100%;
+  overflow: hidden;
   background: #07111f;
 }
 
 .betting-app-page .betting-app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   max-height: none;
+}
+
+.betting-app-overlay .betting-app-shell.bet-odds-screen {
+  height: 100%;
+  max-height: 100%;
 }
 
 .betting-app-shell.hub-sub {
@@ -3476,22 +3513,57 @@ a {
   padding: 8px 0;
 }
 
-.bet-sidebar-nav button {
+.bet-sidebar-nav button,
+.bet-sidebar-link {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 28px 1fr auto auto;
   align-items: center;
   gap: 10px;
   width: 100%;
   border: 0;
-  padding: 12px 16px;
+  padding: 14px 16px;
   background: #fff;
   color: #0f172a;
   text-align: left;
   cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.bet-sidebar-nav button b {
-  font-size: 0.9rem;
+.bet-sidebar-nav button b,
+.bet-sidebar-link b {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.bet-sidebar-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #e8eef5 center / 14px 14px no-repeat;
+}
+
+.bet-sidebar-icon.lock {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'/%3E%3C/svg%3E");
+}
+
+.bet-sidebar-icon.globe {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 12a9 9 0 11-18 0 9 9 0 0118 0z'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M3.6 9h16.8M3.6 15h16.8M12 3c2.2 2.5 3.5 5.8 3.5 9s-1.3 6.5-3.5 9M12 3c-2.2 2.5-3.5 5.8-3.5 9s1.3 6.5 3.5 9'/%3E%3C/svg%3E");
+}
+
+.bet-sidebar-icon.telegram {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2364748b' viewBox='0 0 24 24'%3E%3Cpath d='M9.04 15.39l-.37 3.68c.53 0 .76-.23 1.03-.5l2.48-2.37 5.14 3.77c.94.52 1.62.25 1.87-.87l3.36-15.76h.01c.3-1.4-.5-1.95-1.42-1.6L2.3 9.75c-1.36.53-1.34 1.3-.23 1.64l5.27 1.64L19.6 6.9c.66-.43 1.26-.2.76.25'/%3E%3C/svg%3E");
+}
+
+.bet-sidebar-icon.logout {
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23dc2626' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1'/%3E%3C/svg%3E");
+}
+
+.bet-sidebar-flag {
+  font-size: 1rem;
 }
 
 .bet-sidebar-arrow {
@@ -3512,12 +3584,48 @@ a {
 }
 
 .bet-sidebar-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   border: 0;
   background: transparent;
   color: #dc2626;
   font-weight: 900;
   cursor: pointer;
+}
+
+.settings-sheet-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px 18px;
+}
+
+.language-options {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 18px;
+}
+
+.language-options button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.language-options button.active {
+  border-color: #0fa86b;
+  background: #ecfdf5;
+}
+
+.language-options button b {
+  font-size: 0.95rem;
 }
 
 .user-bets-panel {

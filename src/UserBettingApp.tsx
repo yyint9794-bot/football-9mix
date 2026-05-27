@@ -16,6 +16,13 @@ import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
 import { UserBetSidebar } from './UserBetSidebar';
 import { UserBetsPanel } from './UserBetsPanel';
+import { UserChangePasswordSheet } from './UserChangePasswordSheet';
+import {
+  getStoredLocale,
+  setStoredLocale,
+  UserLanguageSheet,
+  type AppLocale,
+} from './UserLanguageSheet';
 import { UserWalletPanel } from './UserWalletPanel';
 import type { Match } from './types';
 import { fetchMyBets, formatMmk, placeBet, settleMyBets } from './wallet/api';
@@ -72,6 +79,9 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   const [showLeagueFilter, setShowLeagueFilter] = useState(false);
   const [leagueFilter, setLeagueFilter] = useState<Set<string> | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPasswordSheet, setShowPasswordSheet] = useState(false);
+  const [showLanguageSheet, setShowLanguageSheet] = useState(false);
+  const [locale, setLocale] = useState<AppLocale>(() => getStoredLocale());
   const [openBetsEstimate, setOpenBetsEstimate] = useState(0);
   const [placingBet, setPlacingBet] = useState(false);
 
@@ -559,12 +569,30 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
           open={sidebarOpen}
           user={user}
           onClose={() => setSidebarOpen(false)}
-          onNavigate={(next) => {
+          onChangePassword={() => {
             setSidebarOpen(false);
-            setScreen(next);
+            setShowPasswordSheet(true);
+          }}
+          onChooseLanguage={() => {
+            setSidebarOpen(false);
+            setShowLanguageSheet(true);
           }}
           onLogout={() => void logout()}
         />
+
+        {showPasswordSheet ? (
+          <UserChangePasswordSheet onClose={() => setShowPasswordSheet(false)} />
+        ) : null}
+        {showLanguageSheet ? (
+          <UserLanguageSheet
+            locale={locale}
+            onChange={(next) => {
+              setStoredLocale(next);
+              setLocale(next);
+            }}
+            onClose={() => setShowLanguageSheet(false)}
+          />
+        ) : null}
 
         <header className="betting-hub-head">
           <button
@@ -666,9 +694,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
           </div>
         </div>
 
-        <p className="betting-hint">
-          ကြေးဒေတာ — Htay API မှ အလိုအလျောက် ရယူပါသည်
-        </p>
       </div>
     </div>
   );

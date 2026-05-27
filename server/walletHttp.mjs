@@ -59,6 +59,15 @@ export async function handleWalletRequest(request) {
       return jsonResponse(result.error ? 401 : 200, result);
     }
 
+    if (segments[0] === 'password' && request.method === 'POST') {
+      const result = await wallet.walletChangePassword(
+        token,
+        body.currentPassword,
+        body.newPassword,
+      );
+      return jsonResponse(result.error ? 400 : 200, result);
+    }
+
     if (segments[0] === 'transactions' && request.method === 'GET') {
       const result = await wallet.userListTransactions(token);
       return jsonResponse(result.error ? 401 : 200, result);

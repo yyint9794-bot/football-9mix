@@ -136,6 +136,18 @@ export async function acceptTerms() {
   return walletFetch<{ user: WalletUser }>('accept-terms', { method: 'POST' });
 }
 
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const result = await walletFetch<{ ok: boolean; error?: string }>('password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const saved = getSavedLoginCredentials();
+  if (saved) {
+    saveLoginCredentials(saved.username, newPassword);
+  }
+  return result;
+}
+
 export async function fetchMyTransactions() {
   return walletFetch<{ transactions: WalletTransaction[] }>('transactions');
 }

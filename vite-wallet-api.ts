@@ -69,6 +69,16 @@ async function handleWalletApi(req: IncomingMessage, res: ServerResponse) {
       return;
     }
 
+    if (segments[0] === 'password' && req.method === 'POST') {
+      const result = await wallet.walletChangePassword(
+        token,
+        body.currentPassword,
+        body.newPassword,
+      );
+      sendJson(res, result.error ? 400 : 200, result);
+      return;
+    }
+
     if (segments[0] === 'transactions' && req.method === 'GET') {
       const result = await wallet.userListTransactions(token);
       sendJson(res, result.error ? 401 : 200, result);
