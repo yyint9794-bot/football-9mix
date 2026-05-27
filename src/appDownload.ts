@@ -10,14 +10,34 @@ export function isIosDevice() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-/** Android → APK file; iOS / desktop → mobile web app */
+/** Home page download → real APK file (all platforms; install on Android). */
 export function resolveAppDownloadHref() {
-  if (isAndroidDevice()) {
-    return APP_APK_URL;
-  }
-  return '/app';
+  return APP_APK_URL;
 }
 
 export function shouldDownloadApkFile() {
-  return isAndroidDevice();
+  return true;
+}
+
+export async function triggerApkDownload() {
+  if (isIosDevice()) {
+    window.location.href = '/app';
+    return;
+  }
+
+  const response = await fetch(APP_APK_URL, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`APK မတွေ့ပါ (${response.status}) — Admin ထံ ဆက်သွယ်ပါ`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = APP_APK_FILENAME;
+  anchor.rel = 'noopener';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
 }

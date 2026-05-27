@@ -3,8 +3,10 @@ import {
   hasMatchScore,
   isMatchFinished,
   isRecentMatchTime,
+  isWithinResultsWindow,
   parseMmkScoresPayload,
 } from './matchScore';
+import { parseKickoffTime } from './liveMatch';
 import { enrichMatchesWithLogos } from './teamLogoIndex';
 import { resolveMissingTeamLogos } from './teamLogoResolver';
 import { extractMmkTeamLogo, normalizeLogoUrl } from './teamLogoUrl';
@@ -776,7 +778,7 @@ function mergeResultsIntoMatches(matches: Match[], resultMatches: Match[]) {
       continue;
     }
 
-    if (!isRecentMatchTime(result.time)) {
+    if (!isWithinResultsWindow(result.time)) {
       continue;
     }
 
@@ -875,9 +877,8 @@ function resultDisplayKey(match: Match) {
 }
 
 export async function fetchMatchResults(signal?: AbortSignal): Promise<Match[]> {
-  const resultResponses = await Promise.allSettled(
-    MMK_RESULTS_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)),
-  );
+  const paths = [...MMK_RESULTS_ENDPOINTS, '/mmk-autokyay/livedata'];
+  const resultResponses = await Promise.allSettled(paths.map((path) => fetchMmkMatches(path, signal)));
 
   const byKey = new Map<string, Match>();
   for (const result of resultResponses) {
@@ -890,19 +891,30 @@ export async function fetchMatchResults(signal?: AbortSignal): Promise<Match[]> 
         continue;
       }
 
-      const key = resultDisplayKey(match);
+      const key = getMatchKey(match);
       const existing = byKey.get(key);
-      if (!existing || !hasMatchScore(existing)) {
-        byKey.set(key, match);
+      const next = {
+        ...match,
+        status: 'completed',
+        completed: true,
+        is_finished: true,
+        resultFromApi: true,
+      };
+
+      if (!existing) {
+        byKey.set(key, next);
+        continue;
       }
+
+      byKey.set(key, applyScoresToMatch(existing, next));
     }
   }
 
   return Array.from(byKey.values())
-    .filter((match) => isRecentMatchTime(match.time))
+    .filter((match) => isWithinResultsWindow(match.time))
     .sort((a, b) => {
-      const timeA = new Date(a.time).getTime() || 0;
-      const timeB = new Date(b.time).getTime() || 0;
+      const timeA = parseKickoffTime(a.time)?.getTime() ?? 0;
+      const timeB = parseKickoffTime(b.time)?.getTime() ?? 0;
       return timeB - timeA;
     });
 }

@@ -128,8 +128,19 @@ export function isRecentMatchTime(time: string, maxDays = 21) {
     return true;
   }
 
-  const ageMs = Date.now() - parsed.getTime();
-  return ageMs >= 0 && ageMs <= maxDays * 24 * 60 * 60 * 1000;
+  const ageMs = Math.abs(Date.now() - parsed.getTime());
+  return ageMs <= maxDays * 24 * 60 * 60 * 1000;
+}
+
+/** ပွဲရလဒ် စာမျက်နှာ — ပြီးခဲ့သော ပွဲများပါ ပြရန် */
+export function isWithinResultsWindow(time: string, maxDays = 120) {
+  const parsed = parseKickoffTime(time);
+  if (!parsed) {
+    return true;
+  }
+
+  const ageMs = Math.abs(Date.now() - parsed.getTime());
+  return ageMs <= maxDays * 24 * 60 * 60 * 1000;
 }
 
 export function isResultDisplayMatch(match: Match) {
@@ -139,6 +150,17 @@ export function isResultDisplayMatch(match: Match) {
 export function listFinishedMatchesWithScores(matches: Match[]) {
   return matches
     .filter((match) => isResultDisplayMatch(match))
+    .sort((a, b) => {
+      const timeA = parseKickoffTime(a.time)?.getTime() ?? 0;
+      const timeB = parseKickoffTime(b.time)?.getTime() ?? 0;
+      return timeB - timeA;
+    });
+}
+
+/** ပွဲရလဒ် panel — အမှတ်ရှိရင် ပြမည် */
+export function listMatchesWithScores(matches: Match[]) {
+  return matches
+    .filter((match) => hasMatchScore(match))
     .sort((a, b) => {
       const timeA = parseKickoffTime(a.time)?.getTime() ?? 0;
       const timeB = parseKickoffTime(b.time)?.getTime() ?? 0;

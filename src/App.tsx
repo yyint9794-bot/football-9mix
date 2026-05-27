@@ -8,7 +8,7 @@ import {
   isOddsClosed,
   resolveLeagueLogoForGroup,
 } from './api';
-import { shouldDownloadApkFile, APP_APK_URL } from './appDownload';
+import { triggerApkDownload } from './appDownload';
 import { DownloadAppButton } from './DownloadAppButton';
 import { openBetPage, openMobileApp } from './navigation';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
@@ -447,11 +447,7 @@ function App() {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    if (shouldDownloadApkFile()) {
-                      window.location.href = APP_APK_URL;
-                      return;
-                    }
-                    openMobileApp();
+                    void triggerApkDownload().catch(() => openMobileApp());
                   }}
                 >
                   <span className="menu-live-dot" />
@@ -635,14 +631,10 @@ function App() {
             type="button"
             className="site-footer-app-btn"
             onClick={() => {
-              if (shouldDownloadApkFile()) {
-                window.location.href = APP_APK_URL;
-                return;
-              }
-              openMobileApp();
+              void triggerApkDownload().catch(() => openMobileApp());
             }}
           >
-            📱 {shouldDownloadApkFile() ? 'APK ဒေါင်းလုဒ်' : 'Mobile App ဖွင့်မည်'}
+            📱 အက်ပ်ဒေါင်းလုဒ် (APK)
           </button>
           <a href="/privacy">ကိုယ်ရေးအချက်အလက် မူဝါဒ</a>
         </div>

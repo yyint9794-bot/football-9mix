@@ -1,5 +1,5 @@
-import type { MouseEvent, ReactNode } from 'react';
-import { APP_APK_FILENAME, isIosDevice, resolveAppDownloadHref, shouldDownloadApkFile } from './appDownload';
+import { useState, type MouseEvent, type ReactNode } from 'react';
+import { APP_APK_FILENAME, isIosDevice, resolveAppDownloadHref, triggerApkDownload } from './appDownload';
 
 type DownloadAppButtonProps = {
   className?: string;
@@ -10,26 +10,35 @@ export function DownloadAppButton({
   className = 'download-button',
   children = 'အက်ပ်ဒေါင်းလုဒ်',
 }: DownloadAppButtonProps) {
+  const [busy, setBusy] = useState(false);
   const href = resolveAppDownloadHref();
-  const isApk = shouldDownloadApkFile();
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (isIosDevice()) {
-      event.preventDefault();
-      window.location.href = '/app';
+    event.preventDefault();
+    if (busy) {
+      return;
     }
+
+    setBusy(true);
+    void triggerApkDownload()
+      .catch(() => {
+        window.location.href = href;
+      })
+      .finally(() => {
+        setBusy(false);
+      });
   };
 
   return (
     <a
       className={className}
       href={href}
-      download={isApk ? APP_APK_FILENAME : undefined}
+      download={APP_APK_FILENAME}
       onClick={handleClick}
-      rel={isApk ? 'noopener' : undefined}
+      rel="noopener"
     >
-      {children}
-      {isApk ? <span className="download-button-sub">APK</span> : null}
+      {busy ? 'ဒေါင်းလုဒ်…' : children}
+      {!isIosDevice() ? <span className="download-button-sub">APK</span> : null}
     </a>
   );
 }
