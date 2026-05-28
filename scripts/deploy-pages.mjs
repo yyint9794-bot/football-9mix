@@ -2,7 +2,7 @@
  * Cloudflare Pages deploy — CI / local (secrets စစ်ပြီး deploy)
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { requireCloudflareEnv } from './cloudflare-env.mjs';
@@ -31,8 +31,19 @@ if (!existsSync(versionPath)) {
 const version = JSON.parse(readFileSync(versionPath, 'utf8'));
 console.log(`Deploying web v${version.versionName} (${version.versionCode}) → football-9mix`);
 
-function run(args) {
-  const result = spawnSync('npx', ['wrangler', ...args, '--account-id', accountId], {
+const downloadsDir = join(root, 'dist', 'downloads');
+if (existsSync(downloadsDir)) {
+  for (const name of readdirSync(downloadsDir)) {
+    if (name.endsWith('.apk')) {
+      unlinkSync(join(downloadsDir, name));
+      console.log(`Removed dist/downloads/${name} (Pages 25MB limit)`);
+    }
+  }
+}
+
+function run(args, { account = true } = {}) {
+  const wranglerArgs = account ? [...args, '--account-id', accountId] : args;
+  const result = spawnSync('npx', ['wrangler', ...wranglerArgs], {
     cwd: root,
     stdio: 'inherit',
     shell: isWin,
@@ -42,19 +53,22 @@ function run(args) {
 }
 
 console.log('\n① wrangler whoami…');
-if (run(['whoami']) !== 0) {
+if (run(['whoami'], { account: false }) !== 0) {
   fail('Cloudflare login မအောင်မြင် — token မှား သို့မဟုတ် permission မလုံလောက်');
 }
 
 console.log('\n② pages deploy…');
-const status = run([
-  'pages',
-  'deploy',
-  'dist',
-  '--project-name=football-9mix',
-  '--branch=main',
-  '--commit-dirty=true',
-]);
+const status = run(
+  [
+    'pages',
+    'deploy',
+    'dist',
+    '--project-name=football-9mix',
+    '--branch=main',
+    '--commit-dirty=true',
+  ],
+  { account: false },
+);
 if (status !== 0) {
   fail('Pages deploy မအောင်မြင် — Dashboard မှာ project football-9mix ရှိမရှိ စစ်');
 }

@@ -6,28 +6,36 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireCloudflareEnv } from './cloudflare-env.mjs';
+import { hasR2S3Credentials, requireCloudflareEnv } from './cloudflare-env.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isWin = process.platform === 'win32';
 
-function run(cmd, args) {
-  const result = spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell: isWin });
+function run(cmd, args, extraEnv = {}) {
+  const result = spawnSync(cmd, args, {
+    cwd: root,
+    stdio: 'inherit',
+    shell: isWin,
+    env: { ...process.env, ...extraEnv },
+  });
   return result.status ?? 1;
 }
 
 try {
-  requireCloudflareEnv();
+  const creds = requireCloudflareEnv();
+  if (creds.oauth) {
+    console.log('Cloudflare: wrangler OAuth (local login)\n');
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
-  console.error('\n① copy .env.cloudflare.local.example → .env.cloudflare.local');
-  console.error('② CLOUDFLARE_API_TOKEN=cfut_... ထည့်');
-  console.error('③ node scripts/deploy-now.mjs\n');
+  if (hasR2S3Credentials()) {
+    console.error('R2 S3 keys ရှိ — npm run upload:apk:s3\n');
+  }
   process.exit(1);
 }
 
 console.log('=== Build web + functions ===\n');
-if (run('npm', ['run', 'build']) !== 0) {
+if (run('npm', ['run', 'build'], { PAGES_DEPLOY: '1' }) !== 0) {
   process.exit(1);
 }
 

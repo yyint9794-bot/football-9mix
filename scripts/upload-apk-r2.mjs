@@ -60,10 +60,11 @@ try {
 const bytes = statSync(versionedPath).size;
 console.log(`Uploading APK (${Math.round(bytes / 1024 / 1024)} MB) → R2 "${config.bucket}"`);
 
-function wrangler(args, { allowFail = false } = {}) {
+function wrangler(args, { allowFail = false, account = false } = {}) {
+  const wranglerArgs = account ? [...args, '--account-id', accountId] : args;
   const result = spawnSync(
     'npx',
-    ['wrangler', ...args, '--account-id', accountId],
+    ['wrangler', ...wranglerArgs],
     {
       cwd: root,
       encoding: 'utf8',
@@ -83,7 +84,7 @@ function wrangler(args, { allowFail = false } = {}) {
 }
 
 console.log('\n① Cloudflare whoami…');
-if (!wrangler(['whoami'])) {
+if (!wrangler(['whoami'], { account: false })) {
   console.error('\nToken မှား သို့မဟုတ် account id မကိုက်');
   process.exit(1);
 }
@@ -97,7 +98,8 @@ if (!listed) {
 wrangler(['r2', 'bucket', 'create', config.bucket], { allowFail: true });
 
 function putObject(key, file, contentType = 'application/vnd.android.package-archive') {
-  console.log(`\n③ Put ${key} …`);
+  const objectPath = `${config.bucket}/${key}`;
+  console.log(`\n③ Put ${objectPath} …`);
   const result = spawnSync(
     'npx',
     [
@@ -105,16 +107,11 @@ function putObject(key, file, contentType = 'application/vnd.android.package-arc
       'r2',
       'object',
       'put',
-      key,
+      objectPath,
       '--file',
       file,
-      '--bucket',
-      config.bucket,
-      '--remote',
       '--content-type',
       contentType,
-      '--account-id',
-      accountId,
     ],
     { cwd: root, encoding: 'utf8', shell: true, env: wranglerEnv },
   );

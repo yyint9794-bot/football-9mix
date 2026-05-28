@@ -26,6 +26,8 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          PAGES_DEPLOY: '1'
 
       - name: Verify dist/app-version.json
         run: node -e "const v=require('./dist/app-version.json'); console.log('versionCode', v.versionCode); if (v.versionCode < 15) process.exit(1)"

@@ -2,6 +2,7 @@
  * Cloudflare API token + account id — CI / local
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +23,9 @@ function loadEnvFile(path) {
     }
     const key = trimmed.slice(0, eq).trim();
     const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+    if (!value) {
+      continue;
+    }
     if (!process.env[key]) {
       process.env[key] = value;
     }
@@ -60,13 +64,34 @@ export function loadCloudflareEnv() {
   return { token, accountId };
 }
 
+function wranglerOAuthReady() {
+  const isWin = process.platform === 'win32';
+  const result = spawnSync('npx', ['wrangler', 'whoami'], {
+    cwd: root,
+    encoding: 'utf8',
+    shell: isWin,
+    env: { ...process.env, CLOUDFLARE_API_TOKEN: '' },
+  });
+  const out = `${result.stdout || ''}${result.stderr || ''}`;
+  return result.status === 0 && /logged in/i.test(out);
+}
+
 export function requireCloudflareEnv() {
-  const { token, accountId } = loadCloudflareEnv();
+  let { token, accountId } = loadCloudflareEnv();
+
+  if (!token && wranglerOAuthReady()) {
+    if (!accountId) {
+      accountId = '6bf98f7ca096abc0bf87e011b3e3a9d3';
+    }
+    const env = { ...process.env, CLOUDFLARE_ACCOUNT_ID: accountId };
+    delete env.CLOUDFLARE_API_TOKEN;
+    return { token: '', accountId, wranglerEnv: env, oauth: true };
+  }
 
   if (!token) {
     const hint = join(root, '.env.cloudflare.local');
     throw new Error(
-      `CLOUDFLARE_API_TOKEN မရှိ — ${hint} ဖိုင်ဖန်တီးပြီး cfut_ token ထည့်ပါ (သို့ GitHub Actions → Upload APK to R2)`,
+      `CLOUDFLARE_API_TOKEN မရှိ — ${hint} သို့ npx wrangler login (GitHub Actions → secrets)`,
     );
   }
   if (!accountId) {
@@ -85,6 +110,7 @@ export function requireCloudflareEnv() {
   return {
     token,
     accountId,
+    oauth: false,
     wranglerEnv: {
       ...process.env,
       CLOUDFLARE_API_TOKEN: token,
