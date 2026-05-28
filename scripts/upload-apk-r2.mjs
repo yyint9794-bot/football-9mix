@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { apkFileName, apkR2Key, loadApkHostingConfig } from './apk-hosting.mjs';
-import { requireCloudflareEnv } from './cloudflare-env.mjs';
+import { hasR2S3Credentials, requireCloudflareEnv } from './cloudflare-env.mjs';
 import { spawnSync as spawnUploadFallback } from 'node:child_process';
 
 function tryS3Fallback() {
@@ -43,8 +43,18 @@ let wranglerEnv;
 try {
   ({ token, accountId, wranglerEnv } = requireCloudflareEnv());
 } catch (error) {
+  if (hasR2S3Credentials()) {
+    console.log('CLOUDFLARE_API_TOKEN မရှိ — R2 S3 keys သုံးပြီး upload လုပ်မည်\n');
+    const s3 = spawnSync(process.execPath, [join(root, 'scripts', 'upload-apk-r2-s3.mjs')], {
+      cwd: root,
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    });
+    process.exit(s3.status === 0 ? 0 : 1);
+  }
   console.error(error instanceof Error ? error.message : String(error));
-  console.error('\nLocal: project root မှာ .env.cloudflare.local ဖန်တီးပါ — docs/CLOUDFLARE_TOKEN.md');
+  console.error('\nLocal: .env.cloudflare.local — docs/CLOUDFLARE_TOKEN.md');
   process.exit(1);
 }
 const bytes = statSync(versionedPath).size;
@@ -86,7 +96,7 @@ if (!listed) {
 
 wrangler(['r2', 'bucket', 'create', config.bucket], { allowFail: true });
 
-function putObject(key, file) {
+function putObject(key, file, contentType = 'application/vnd.android.package-archive') {
   console.log(`\n③ Put ${key} …`);
   const result = spawnSync(
     'npx',
@@ -102,7 +112,7 @@ function putObject(key, file) {
       config.bucket,
       '--remote',
       '--content-type',
-      'application/vnd.android.package-archive',
+      contentType,
       '--account-id',
       accountId,
     ],
@@ -132,6 +142,13 @@ if (!putObject(versionKey, versionedPath)) {
 if (existsSync(latestPath)) {
   const latestKey = `${config.r2KeyPrefix.replace(/\/$/, '')}/9mix-football.apk`;
   putObject(latestKey, latestPath);
+}
+
+const versionMetaPath = join(root, 'public', 'app-version.json');
+if (existsSync(versionMetaPath)) {
+  const metaKey = `${config.r2KeyPrefix.replace(/\/$/, '')}/app-version.json`;
+  putObject(metaKey, versionMetaPath, 'application/json');
+  console.log(`  Meta: ${metaKey} (app update check)`);
 }
 
 console.log(`\n✓ R2 upload OK: ${versionKey}`);

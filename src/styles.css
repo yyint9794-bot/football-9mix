@@ -3398,6 +3398,32 @@ a.primary-button.download-hero-btn,
   flex-wrap: wrap;
 }
 
+.bet-match-teams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px 4px;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bet-match-teams .bet-team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bet-match-vs {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+
 .bet-grid-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);

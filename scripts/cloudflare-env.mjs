@@ -7,8 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-function loadLocalEnvFile() {
-  const path = join(root, '.env.cloudflare.local');
+function loadEnvFile(path) {
   if (!existsSync(path)) {
     return;
   }
@@ -29,7 +28,22 @@ function loadLocalEnvFile() {
   }
 }
 
-loadLocalEnvFile();
+for (const name of ['.env.cloudflare.local', '.env.local', '.env']) {
+  loadEnvFile(join(root, name));
+}
+
+/** R2 S3 keys — wrangler မလို upload:apk:s3 */
+export function loadR2S3Env() {
+  const accountId = (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+  const accessKey = (process.env.R2_ACCESS_KEY_ID || '').trim();
+  const secretKey = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
+  return { accountId, accessKey, secretKey };
+}
+
+export function hasR2S3Credentials() {
+  const { accountId, accessKey, secretKey } = loadR2S3Env();
+  return Boolean(accountId && accessKey && secretKey);
+}
 
 export function loadCloudflareEnv() {
   function clean(name) {
@@ -50,7 +64,10 @@ export function requireCloudflareEnv() {
   const { token, accountId } = loadCloudflareEnv();
 
   if (!token) {
-    throw new Error('CLOUDFLARE_API_TOKEN မရှိ — GitHub Secrets သို့မဟုတ် env ထည့်ပါ');
+    const hint = join(root, '.env.cloudflare.local');
+    throw new Error(
+      `CLOUDFLARE_API_TOKEN မရှိ — ${hint} ဖိုင်ဖန်တီးပြီး cfut_ token ထည့်ပါ (သို့ GitHub Actions → Upload APK to R2)`,
+    );
   }
   if (!accountId) {
     throw new Error('CLOUDFLARE_ACCOUNT_ID မရှိ');

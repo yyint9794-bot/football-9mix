@@ -1,15 +1,15 @@
 {
   "parameters": {
     "app_min_version_code": {
-      "defaultValue": { "value": "16" },
+      "defaultValue": { "value": "20" },
       "description": "ဤ build ထက် နိမ့်ရင် update ပြမည်"
     },
     "app_latest_version_code": {
-      "defaultValue": { "value": "16" },
+      "defaultValue": { "value": "20" },
       "description": "နောက်ဆုံး versionCode"
     },
     "app_version_name": {
-      "defaultValue": { "value": "1.4.2" },
+      "defaultValue": { "value": "1.5.0" },
       "description": "ဥပမာ 1.4.1"
     },
     "app_download_url": {
@@ -17,11 +17,11 @@
       "description": "APK ဒေါင်းလုဒ် စာမျက်နှာ"
     },
     "app_release_notes": {
-      "defaultValue": { "value": "ဘော်ဒီ Over/Under + ကြေးပေးအသင်း UI — v16" }
+      "defaultValue": { "value": "R2 APK တင်ရုံနဲ့ App Update ပေါ် — v19" }
     },
     "app_release_features": {
       "defaultValue": {
-        "value": "ကြော်ငြာ တစ်ခုတည်း|ဘော်ဒီ Over/Under|ကြေးပေးအသင်း အစိမ်းကွက်|မောင်း/ဘော်ဒီ ကြေးပြင်ဆင်|Update v16"
+        "value": "R2 upload → update ပေါ်|မောင်း/ဘော်ဒီ|ကြော်ငြာ တစ်ခုတည်း|APK ~5–15MB|Update v19"
       },
       "description": "Feature list — | ခွဲ"
     },

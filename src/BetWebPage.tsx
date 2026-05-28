@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { BettingShellProvider } from './betting/BettingShellContext';
+import { SitePromoBanner } from './SitePromoBanner';
 import { UserBettingApp } from './UserBettingApp';
 import { openHomePage } from './navigation';
 import { getSavedLoginCredentials } from './wallet/api';
@@ -75,7 +77,12 @@ export function BetWebPage() {
   }
 
   if (user) {
-    return <UserBettingApp layout="page" onClose={openHomePage} />;
+    return (
+      <BettingShellProvider promoHandledByParent>
+        <SitePromoBanner slot="user" className="bet-user-top-banner" />
+        <UserBettingApp layout="page" onClose={openHomePage} />
+      </BettingShellProvider>
+    );
   }
 
   return (

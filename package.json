@@ -28,7 +28,9 @@
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0",
     "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat",
-    "pages:deploy": "npm run build && node scripts/deploy-pages.mjs"
+    "pages:deploy": "npm run build && node scripts/deploy-pages.mjs",
+    "deploy:now": "node scripts/deploy-now.mjs",
+    "cloudflare:setup": "node scripts/setup-cloudflare-env.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",

@@ -4,6 +4,7 @@ import { getFirebaseApp } from './firebaseApp';
 import { APP_DOWNLOAD_PAGE, type AppVersionInfo } from './appVersionInfo';
 import { parseReleaseFeatures } from './parseReleaseFeatures';
 import {
+  MINIMUM_REQUIRED_VERSION_CODE,
   PUBLISHED_RELEASE_NOTES,
   PUBLISHED_VERSION_CODE,
   PUBLISHED_VERSION_NAME,
@@ -43,8 +44,8 @@ async function ensureRemoteConfig() {
   remoteConfig = getRemoteConfig(firebaseApp);
 
   remoteConfig.defaultConfig = {
-    app_min_version_code: '14',
-    app_latest_version_code: String(Math.max(PUBLISHED_VERSION_CODE, 14)),
+    app_min_version_code: String(MINIMUM_REQUIRED_VERSION_CODE),
+    app_latest_version_code: String(PUBLISHED_VERSION_CODE),
     app_version_name: PUBLISHED_VERSION_NAME,
     app_download_url: APP_DOWNLOAD_PAGE,
     app_release_notes: PUBLISHED_RELEASE_NOTES,

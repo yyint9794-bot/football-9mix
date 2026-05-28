@@ -8,9 +8,9 @@ android {
         applicationId "org.ballpwal.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "1.4.2"
-        // appMinVersionCode: 16
+        versionCode 20
+        versionName "1.5.0"
+        // appMinVersionCode: 20
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

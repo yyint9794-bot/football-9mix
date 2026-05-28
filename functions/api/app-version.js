@@ -1,8 +1,10 @@
-import { APP_VERSION } from '../_generated/appVersion.mjs';
+import { resolveAppVersionFromR2 } from '../lib/resolveAppVersion.mjs';
 
-/** Live app version — static file deploy ဟောင်းဖြစ်ရင် API မှ ပြန် */
-export async function onRequest() {
-  return new Response(JSON.stringify(APP_VERSION), {
+/** Live version — R2 ထဲ APK / app-version.json (R2 upload သာ လုပ်ရင်လည်း update ပေါ်) */
+export async function onRequest(context) {
+  const version = await resolveAppVersionFromR2(context.env.APK_BUCKET);
+
+  return new Response(JSON.stringify(version), {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',

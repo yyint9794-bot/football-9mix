@@ -16,6 +16,7 @@ import { LeagueFilterSheet } from './LeagueFilterSheet';
 import { TermsAgreementModal } from './TermsAgreementModal';
 import { UserBetSidebar } from './UserBetSidebar';
 import { MatchResultsPanel } from './MatchResultsPanel';
+import { useBettingShell } from './betting/BettingShellContext';
 import { BettingChrome } from './BettingChrome';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import { UserBetsPanel } from './UserBetsPanel';
@@ -169,8 +170,13 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     return bettingRows.filter((row) => leagueFilter.has(row.league));
   }, [bettingRows, leagueFilter, availableLeagues.length]);
 
+  const { promoHandledByParent } = useBettingShell();
   const isMobileAppShell = document.documentElement.classList.contains('mobile-app-mode');
-  const showBettingPromo = !Capacitor.isNativePlatform() && !isMobileAppShell;
+  const showBettingPromo =
+    layout === 'modal' &&
+    !promoHandledByParent &&
+    !Capacitor.isNativePlatform() &&
+    !isMobileAppShell;
 
   useEffect(() => {
     if (screen !== 'body-goal' && screen !== 'maung') {
@@ -178,6 +184,14 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     }
     setLeagueFilter(null);
     let disposed = false;
+    const cachedRows = buildBettingRows(matches);
+    if (cachedRows.length) {
+      setLoading(false);
+      setError('');
+    } else {
+      setLoading(true);
+    }
+
     void getBettingMatches(undefined, (partial) => {
       if (!disposed && partial.length) {
         setMatches(partial);
@@ -186,17 +200,23 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
       }
     })
       .then((next) => {
-        if (!disposed) {
-          setMatches(next);
-          if (!next.length) {
-            setError('ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
-          } else {
-            setError('');
-          }
+        if (disposed) {
+          return;
         }
+        if (next.length) {
+          setMatches(next);
+          setError('');
+          return;
+        }
+        setMatches((current) => {
+          if (!buildBettingRows(current).length) {
+            setError('ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
+          }
+          return current;
+        });
       })
       .catch(() => {
-        if (!disposed) {
+        if (!disposed && !buildBettingRows(matches).length) {
           setError('ကြေးဒေတာ မရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
         }
       })
@@ -414,8 +434,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     const awaySummary = row.body
       ? formatBodyAwayPickLabel(row.body, awayName, row.match)
       : awayName;
-    const homeOddsLabel = row.body ? homeSummary.replace(`${homeName} `, '') : bodyPill;
-    const awayOddsLabel = row.body ? awaySummary.replace(`${awayName} `, '') : bodyPill;
+    const homeOddsLabel = row.body ? homeSummary.replace(`${homeName} `, '').trim() : '—';
+    const awayOddsLabel = row.body ? awaySummary.replace(`${awayName} `, '').trim() : '—';
 
     const onMaungSide = (side: BetSide, oddsLabel: string, summary: string) => {
       toggleMaungPick(row, side, oddsLabel, summary, homeName, awayName);
@@ -439,6 +459,12 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
           ပွဲချိန် : {row.kickoffLabel}
           <MatchScoreBadge match={row.match} className="match-score-badge bet" />
         </p>
+
+        <div className="bet-match-teams" aria-label="ပွဲစဉ်">
+          <span className="bet-team-name">{homeName}</span>
+          <span className="bet-match-vs">vs</span>
+          <span className="bet-team-name">{awayName}</span>
+        </div>
 
         {row.body ? (
           <div className="bet-grid-row body bet-grid-row-teams">
@@ -608,7 +634,10 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
                   <p className="bet-error">
                     {filterActive
                       ? 'ရွေးထားသော လိဂ်တွင် ကြေးမရှိပါ'
-                      : error || 'ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ'}
+                      : error ||
+                        (matches.length
+                          ? 'ကြေးဒေတာ ရပြီးသော်လည်း ပြသရန် မအောင်မြင်ပါ — ပြန်ယူမည်'
+                          : 'ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ')}
                   </p>
                   {!filterActive ? (
                     <button

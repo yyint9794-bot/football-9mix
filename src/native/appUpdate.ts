@@ -80,17 +80,65 @@ function parseVersionPayload(text: string): AppVersionInfo | null {
       ? data.releaseFeatures.map((item) => String(item).trim()).filter(Boolean)
       : parseReleaseFeatures(typeof data.releaseFeatures === 'string' ? data.releaseFeatures : '');
 
+  const apkDirect = [data.apkUrl, data.apkUrlSite, data.apkUrlCdn]
+    .map((url) => String(url || '').trim())
+    .find((url) => url.startsWith('http'));
+
+  const versionCode = Number(data.versionCode);
+  const minFromServer = Number(data.minVersionCode);
+  const minVersionCode =
+    Number.isFinite(minFromServer) && minFromServer > 0
+      ? Math.max(minFromServer, versionCode)
+      : versionCode;
+
   return {
-    versionCode: data.versionCode,
+    versionCode,
     versionName: String(data.versionName || data.versionCode),
-    apkUrl: APP_DOWNLOAD_PAGE,
-    apkUrlSite: APP_DOWNLOAD_PAGE,
+    apkUrl: apkDirect || APP_DOWNLOAD_PAGE,
+    apkUrlSite: apkDirect || APP_DOWNLOAD_PAGE,
     releaseNotes: data.releaseNotes,
     releaseFeatures: features,
     forceUpdate: data.forceUpdate !== false,
-    minVersionCode: Math.max(data.versionCode, MINIMUM_REQUIRED_VERSION_CODE),
+    minVersionCode,
     source: 'json',
   };
+}
+
+function normalizeRemoteVersion(remote: AppVersionInfo): AppVersionInfo {
+  const apkUrl =
+    remote.apkUrl?.startsWith('http')
+      ? remote.apkUrl
+      : remote.apkUrlSite?.startsWith('http')
+        ? remote.apkUrlSite
+        : APP_DOWNLOAD_PAGE;
+
+  return {
+    ...remote,
+    apkUrl,
+    apkUrlSite: apkUrl,
+    minVersionCode: Math.max(remote.minVersionCode ?? 0, remote.versionCode),
+    forceUpdate: remote.forceUpdate !== false,
+  };
+}
+
+function pickLatestVersion(candidates: AppVersionInfo[]): AppVersionInfo {
+  return candidates.reduce((best, current) => {
+    const normalized = normalizeRemoteVersion(current);
+    if (normalized.versionCode > best.versionCode) {
+      return normalized;
+    }
+    if (normalized.versionCode === best.versionCode) {
+      return normalizeRemoteVersion({
+        ...best,
+        releaseNotes: normalized.releaseNotes || best.releaseNotes,
+        releaseFeatures: normalized.releaseFeatures?.length
+          ? normalized.releaseFeatures
+          : best.releaseFeatures,
+        apkUrl: normalized.apkUrl.startsWith('http') ? normalized.apkUrl : best.apkUrl,
+      });
+    }
+    return best;
+  });
 }
 
 async function fetchJsonVersion(url: string): Promise<AppVersionInfo | null> {
@@ -121,31 +169,33 @@ export function buildFallbackUpdateInfo(): AppVersionInfo {
   };
 }
 
-/** Firebase → web JSON → APK ထဲ bundled app-version.json */
+/** ballpwal.org API (R2) → static JSON → Firebase → APK bundled fallback */
 export async function fetchLatestAppVersion(): Promise<AppVersionInfo | null> {
-  const firebase = await fetchFirebaseAppVersion();
-  if (firebase?.versionCode) {
-    return {
-      ...firebase,
-      minVersionCode: Math.max(
-        firebase.minVersionCode ?? 0,
-        firebase.versionCode,
-        MINIMUM_REQUIRED_VERSION_CODE,
-      ),
-      forceUpdate: true,
-    };
-  }
+  const candidates: AppVersionInfo[] = [];
 
   for (const base of VERSION_URLS) {
     const remote = await fetchJsonVersion(withCacheBust(base));
     if (remote?.versionCode) {
-      return remote;
+      candidates.push(remote);
     }
   }
 
-  const bundled = await fetchJsonVersion('/app-version.json');
+  const bundled = await fetchJsonVersion(withCacheBust('/app-version.json'));
   if (bundled?.versionCode) {
-    return bundled;
+    candidates.push(bundled);
+  }
+
+  try {
+    const firebase = await fetchFirebaseAppVersion();
+    if (firebase?.versionCode) {
+      candidates.push(firebase);
+    }
+  } catch {
+    // ignore
+  }
+
+  if (candidates.length) {
+    return pickLatestVersion(candidates);
   }
 
   return buildFallbackUpdateInfo();
@@ -197,17 +247,18 @@ export async function getInstalledVersionCode(): Promise<number> {
 }
 
 export function requiresAppUpdate(remote: AppVersionInfo, localCode: number) {
-  const required = Math.max(
-    remote.minVersionCode ?? 0,
-    remote.versionCode,
-    MINIMUM_REQUIRED_VERSION_CODE,
-  );
-  if (!Number.isFinite(required) || required < 1) {
+  const latest = remote.versionCode;
+  if (!Number.isFinite(latest) || latest < 1) {
     return false;
   }
 
   const local = localCode > 0 ? localCode : 1;
-  return local < required;
+  if (local < latest) {
+    return true;
+  }
+
+  const minRequired = remote.minVersionCode ?? latest;
+  return local < minRequired;
 }
 
 export function isUpdateMandatory(_remote: AppVersionInfo) {

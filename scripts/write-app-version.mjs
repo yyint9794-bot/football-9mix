@@ -25,13 +25,12 @@ const payload = {
   apkUrlSite: apkUrl,
   apkUrlCdn: apkUrl,
   forceUpdate: true,
-  releaseNotes: `ဘော်ဒီ Over/Under + ကြေးပေးအသင်း UI — v${versionCode}`,
+  releaseNotes: `အရင်စနစ် in-app download + R2 update — v${versionCode}`,
   releaseFeatures: [
-    'ကြော်ငြာ တစ်ခုတည်း (ထပ်မပြတော့)',
-    'ဘော်ဒီ/ဂိုးပေါင်း — Over Under ပါမည်',
-    'ကြေးပေးအသင်း — အစိမ်းကွက်သေးသေး ကြေးပြမည်',
-    'ဘော်ဒီ ကြေးမပေါ်ရင် အလိုအလျောက် ပြန်ယူမည်',
-    'Update v16 — App ထဲမှ ဒေါင်းလုဒ်',
+    'App ထဲမှ APK ဒေါင်းလုဒ် (အရင်လို)',
+    'R2 upload → update ပေါ်',
+    'မောင်း/ဘော်ဒီ — အသင်းနှင့်ကြေးပြမည်',
+    `Update v${versionCode}`,
   ],
 };
 

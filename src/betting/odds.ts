@@ -1,4 +1,11 @@
 import { hasMyanmarOdds, isOddsClosed } from '../api';
+
+function isBettingRowEligible(match: Match) {
+  if (!hasMyanmarOdds(match) || isOddsClosed(match)) {
+    return false;
+  }
+  return true;
+}
 import { parseKickoffTime } from '../liveMatch';
 import type { Match } from '../types';
 import { isOpenForBetting } from '../matchUi';
@@ -29,12 +36,85 @@ function formatOddsRate(value: unknown) {
   return formatLine(value);
 }
 
+function asOddsRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return first && typeof first === 'object' ? (first as Record<string, unknown>) : undefined;
+  }
+  return value as Record<string, unknown>;
+}
+
+function pickHandicapBlock(value: Record<string, unknown>) {
+  return asOddsRecord(value.handicap ?? value.hdp ?? value.handicap_data ?? value.body_handicap);
+}
+
+function pickOverUnderBlock(value: Record<string, unknown>) {
+  return asOddsRecord(
+    value.over_under ?? value.overUnder ?? value.ou ?? value.goal_over_under ?? value.goalOverUnder,
+  );
+}
+
+function lineField(block: Record<string, unknown>, side: 'home' | 'away') {
+  if (side === 'home') {
+    return formatLine(block.home_line ?? block.homeLine ?? block.home);
+  }
+  return formatLine(block.away_line ?? block.awayLine ?? block.away);
+}
+
+function priceField(block: Record<string, unknown>, side: 'home' | 'away') {
+  if (side === 'home') {
+    return formatOddsRate(block.home_price ?? block.homePrice ?? block.home_rate ?? block.homeRate);
+  }
+  return formatOddsRate(block.away_price ?? block.awayPrice ?? block.away_rate ?? block.awayRate);
+}
+
+export function collectOddsPayload(match: Match): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+
+  const nested = match.myanmarOdds ?? match.myanmar_odds ?? match.mmOdds;
+  const nestedRecord = asOddsRecord(nested);
+  if (nestedRecord) {
+    Object.assign(payload, nestedRecord);
+  }
+
+  const oddsRecord = asOddsRecord(match.odds);
+  if (oddsRecord) {
+    Object.assign(payload, oddsRecord);
+  }
+
+  const flatKeys = [
+    'body',
+    'bodyGap',
+    'price',
+    'goalTotal',
+    'goalTotalPrice',
+    'goalsGap',
+    'handicap',
+    'hdp',
+    'over_under',
+    'overUnder',
+    'ou',
+  ] as const;
+
+  for (const key of flatKeys) {
+    const raw = match[key];
+    if (raw !== undefined && raw !== null && raw !== '') {
+      payload[key] ??= raw;
+    }
+  }
+
+  return payload;
+}
+
 function extractStructuredOdds(value: Record<string, unknown>, match: Match): OddsSection[] {
   const sections: OddsSection[] = [];
   const homeName = match.homeTeam?.name || 'အိမ်ရှင်အသင်း';
   const awayName = match.awayTeam?.name || 'ဧည့်အသင်း';
-  const handicap = value.handicap as Record<string, unknown> | undefined;
-  const overUnder = value.over_under as Record<string, unknown> | undefined;
+  const handicap = pickHandicapBlock(value);
+  const overUnder = pickOverUnderBlock(value);
 
   const hasStructuredHandicap =
     handicap &&
@@ -45,10 +125,10 @@ function extractStructuredOdds(value: Record<string, unknown>, match: Match): Od
       formatOddsRate(handicap.away_price) !== '');
 
   if (hasStructuredHandicap) {
-    const homeLine = formatLine(handicap.home_line);
-    const awayLine = formatLine(handicap.away_line);
-    const homePrice = formatOddsRate(handicap.home_price);
-    const awayPrice = formatOddsRate(handicap.away_price);
+    const homeLine = lineField(handicap, 'home');
+    const awayLine = lineField(handicap, 'away');
+    const homePrice = priceField(handicap, 'home');
+    const awayPrice = priceField(handicap, 'away');
 
     sections.push({
       kind: 'body',
@@ -62,9 +142,9 @@ function extractStructuredOdds(value: Record<string, unknown>, match: Match): Od
   }
 
   if (overUnder && typeof overUnder === 'object') {
-    const goalLine = formatLine(overUnder.line);
-    const overRate = formatOddsRate(overUnder.over_price);
-    const underRate = formatOddsRate(overUnder.under_price);
+    const goalLine = formatLine(overUnder.line ?? overUnder.total ?? overUnder.goal_line);
+    const overRate = formatOddsRate(overUnder.over_price ?? overUnder.overPrice ?? overUnder.over);
+    const underRate = formatOddsRate(overUnder.under_price ?? overUnder.underPrice ?? overUnder.under);
 
     if (goalLine || overRate || underRate) {
       sections.push({
@@ -113,6 +193,13 @@ function extractStructuredOdds(value: Record<string, unknown>, match: Match): Od
   return sections.slice(0, 3);
 }
 
+function extractFromPayload(payload: Record<string, unknown>, match: Match) {
+  if (!Object.keys(payload).length) {
+    return [];
+  }
+  return extractStructuredOdds(payload, match);
+}
+
 export function extractMyanmarOdds(match: Match): OddsSection[] {
   const oddsKeys = [
     'myanmarOdds',
@@ -151,14 +238,18 @@ export function extractMyanmarOdds(match: Match): OddsSection[] {
     }
 
     if (typeof value === 'object') {
-      const structuredRows = extractStructuredOdds(value as Record<string, unknown>, match);
+      const record = asOddsRecord(value);
+      if (!record) {
+        continue;
+      }
+      const structuredRows = extractStructuredOdds(record, match);
       if (structuredRows.length) {
         return structuredRows;
       }
     }
   }
 
-  return [];
+  return extractFromPayload(collectOddsPayload(match), match);
 }
 
 export function formatKickoffLabel(match: Match) {
@@ -414,8 +505,11 @@ function getKickoffMs(match: Match) {
 }
 
 export function buildBettingRows(matches: Match[]): BettingMatchRow[] {
-  return matches
-    .filter((match) => hasMyanmarOdds(match) && isOpenForBetting(match))
+  const withOdds = matches.filter(isBettingRowEligible);
+  const open = withOdds.filter((match) => isOpenForBetting(match));
+  const pool = open.length ? open : withOdds;
+
+  return pool
     .map((match) => {
       const sections = extractMyanmarOdds(match);
       const body = sections.find((section): section is OddsBodySection => section.kind === 'body');
