@@ -1,6 +1,6 @@
 {
-  "name": "9Mix Football",
-  "short_name": "9Mix",
+  "name": "Ball Pwal",
+  "short_name": "Ball Pwal",
   "description": "ဖုန်းအတွက် ဘောလုံး ပွဲစဉ်၊ တိုက်ရိုက်ကြည့်ရှု၊ 9Mix လောင်းမှု",
   "start_url": "/app",
   "scope": "/app",
@@ -10,7 +10,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

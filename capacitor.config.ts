@@ -8,7 +8,7 @@ const liveUrl = process.env.CAPACITOR_LIVE_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: 'org.ballpwal.app',
-  appName: '9Mix Football',
+  appName: 'Ball Pwal',
   webDir: 'dist',
   android: {
     allowMixedContent: false,
