@@ -9,10 +9,11 @@ const gradle = readFileSync(gradlePath, 'utf8');
 
 const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1] ?? 1);
 const versionName = /versionName\s+"([^"]+)"/.exec(gradle)?.[1] ?? '1.0';
-const minRequiredMatch = /minRequiredVersionCode\s+(\d+)/.exec(gradle);
+/** Force-update gate — same as versionCode unless // appMinVersionCode: N in build.gradle */
+const minRequiredMatch = /appMinVersionCode:\s*(\d+)/.exec(gradle);
 const minRequiredVersionCode = minRequiredMatch
   ? Number(minRequiredMatch[1])
-  : Math.max(1, versionCode - 1);
+  : versionCode;
 const { publicBaseUrl } = loadApkHostingConfig();
 const apkUrl = apkPublicUrl(versionCode);
 const apkName = apkFileName(versionCode);

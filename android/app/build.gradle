@@ -10,7 +10,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 16
         versionName "1.4.2"
-        minRequiredVersionCode 16
+        // appMinVersionCode: 16
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
