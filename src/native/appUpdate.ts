@@ -15,7 +15,9 @@ export { APP_DOWNLOAD_PAGE } from './appVersionInfo';
 
 const FETCH_MS = 10_000;
 const VERSION_URLS = [
+  'https://ballpwal.org/api/app-version',
   'https://ballpwal.org/app-version.json',
+  'https://www.ballpwal.org/api/app-version',
   'https://www.ballpwal.org/app-version.json',
 ];
 

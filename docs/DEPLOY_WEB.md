@@ -1,27 +1,43 @@
-# Web deploy — app-version.json အသစ် မပေါ်ရင်
+# Web deploy — app-version.json v15 မပေါ်ရင်
 
 ## ပြဿနာ
 
-`https://ballpwal.org/app-version.json` မှာ **v11** ပြနေရင် App Update မပေါ်ပါ — site deploy မပြီးသေး။
+`https://ballpwal.org/app-version.json` မှာ **v11** ပြနေရင် GitHub Actions deploy **မအောင်မြင်သေး** (သို့) Secrets မရှိ။
 
-## အဖြေ
+## GitHub Actions ပြင်ဆင်ချက်
 
-1. GitHub → **Actions** → **Deploy web to Cloudflare Pages** → **Run workflow**
-2. (သို့) **App + Web release** workflow အောင်မြင်ရင် အလိုအလျောက် deploy
+Workflow: **Deploy web to Cloudflare Pages**
 
-Cloudflare Secrets လိုအပ်သည်:
+### Secrets (Settings → Secrets and variables → Actions)
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+| Secret | လိုအပ် |
+|--------|--------|
+| `CLOUDFLARE_API_TOKEN` | API Token — Permission: **Account → Cloudflare Pages → Edit** |
+| `CLOUDFLARE_ACCOUNT_ID` | Dashboard URL ထဲ account id |
+
+Token ဖန်တီးရန်: Cloudflare Dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template (Pages ပါ)
+
+### Run workflow
+
+Actions → **Deploy web to Cloudflare Pages** → **Run workflow**
+
+အနီရောင် ✓ ဖြစ်ရမည်။ `whoami` step မှာ account ပြရမည်။
 
 ## စစ်ဆေးမှု
 
-Deploy ပြီးရင် browser မှာ:
+Deploy ပြီးရင်:
 
-`https://ballpwal.org/app-version.json`
+- `https://ballpwal.org/app-version.json` → `"versionCode": 15`
+- `https://ballpwal.org/api/app-version` → v15 (function backup)
 
-→ `"versionCode": 15` (သို့မဟုတ် နောက်ဆုံး version)
+## PC မှ deploy (token ရှိရင်)
+
+```bash
+set CLOUDFLARE_API_TOKEN=your_token
+set CLOUDFLARE_ACCOUNT_ID=your_account_id
+npm run pages:deploy
+```
 
 ## APK
 
-`https://ballpwal.org/downloads/9mix-football-v15.apk` — R2 bucket + Pages `APK_BUCKET` binding လိုသည် (`docs/APK_HOSTING_R2.md`)
+`https://ballpwal.org/downloads/9mix-football-v15.apk` — R2 (`docs/APK_HOSTING_R2.md`)

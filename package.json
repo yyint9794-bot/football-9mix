@@ -24,7 +24,8 @@
     "android:open": "npx cap open android",
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0",
-    "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat"
+    "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat",
+    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name=football-9mix --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
@@ -44,7 +45,8 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "firebase-tools": "^14.27.0"
+    "firebase-tools": "^14.27.0",
+    "wrangler": "^3.99.0"
   },
   "engines": {
     "node": ">=20"
