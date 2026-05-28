@@ -4,6 +4,14 @@
 
 `https://ballpwal.org/app-version.json` မှာ **v11** ပြနေရင် GitHub Actions deploy **မအောင်မြင်သေး** (သို့) Secrets မရှိ။
 
+### Secret မှားလျှင် deploy ပျက်
+
+| မှား | မှန် |
+|------|-----|
+| curl command တစ်ခုလုံး | `cfut_...` token သာ |
+| URL / `Authorization` ပါ | token သာ |
+| Account ID မှာ `football-9mix` | `6bf98f7ca096abc0bf87e011b3e3a9d3` (32 လုံး hex) |
+
 ## GitHub Actions ပြင်ဆင်ချက်
 
 Workflow: **Deploy web to Cloudflare Pages**

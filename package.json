@@ -25,7 +25,7 @@
     "typecheck": "tsc -b",
     "preview": "vite preview --host 0.0.0.0",
     "pages:dev": "npm run build && wrangler pages dev dist --compatibility-flags=nodejs_compat",
-    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name=football-9mix --branch=main --commit-dirty=true"
+    "pages:deploy": "npm run build && node scripts/deploy-pages.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
