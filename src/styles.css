@@ -3389,12 +3389,16 @@ a.primary-button.download-hero-btn,
   padding: 8px;
 }
 
-.bet-grid-row.body {
+.bet-grid-row.body,
+.bet-grid-row.bet-grid-row-teams {
   padding-bottom: 4px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-.bet-grid-row.goal {
+.bet-grid-row.goal,
+.bet-grid-row.bet-grid-row-ou {
   padding-bottom: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .bet-team-btn,
@@ -3451,6 +3455,24 @@ a.primary-button.download-hero-btn,
 
 .bet-team-btn.giving.selected {
   background: linear-gradient(180deg, #2e6b3a 0%, #2e5c34 100%);
+}
+
+.bet-team-odds-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #1db954;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.bet-label-btn .bet-team-odds-tag {
+  margin-top: 6px;
 }
 
 .bet-odds-pill {

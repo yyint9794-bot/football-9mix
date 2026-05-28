@@ -1,10 +1,10 @@
+import { Capacitor } from '@capacitor/core';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getBettingMatches } from './api';
 import {
   buildBettingRows,
   formatBodyAwayPickLabel,
   formatBodyHomePickLabel,
-  formatBodyPillLabel,
   formatGoalCenterLabel,
   formatGoalPickLabel,
   getBodyGivingSide,
@@ -163,11 +163,51 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     [bettingRows],
   );
   const filteredRows = useMemo(() => {
-    if (!leagueFilter || leagueFilter.size === availableLeagues.length) {
+    if (!leagueFilter || leagueFilter.size === 0 || leagueFilter.size >= availableLeagues.length) {
       return bettingRows;
     }
     return bettingRows.filter((row) => leagueFilter.has(row.league));
   }, [bettingRows, leagueFilter, availableLeagues.length]);
+
+  const showBettingPromo = !Capacitor.isNativePlatform();
+
+  useEffect(() => {
+    if (screen !== 'body-goal' && screen !== 'maung') {
+      return;
+    }
+    setLeagueFilter(null);
+    let disposed = false;
+    void getBettingMatches(undefined, (partial) => {
+      if (!disposed && partial.length) {
+        setMatches(partial);
+        setLoading(false);
+        setError('');
+      }
+    })
+      .then((next) => {
+        if (!disposed) {
+          setMatches(next);
+          if (!next.length) {
+            setError('ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
+          } else {
+            setError('');
+          }
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setError('ကြေးဒေတာ မရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
+        }
+      })
+      .finally(() => {
+        if (!disposed) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [screen]);
   const leagueGroups = useMemo(() => groupBettingRowsByLeague(filteredRows), [filteredRows]);
 
   if (!user) {
@@ -364,7 +404,6 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     const homeName = getEnglishTeamName(row.match, 'home');
     const awayName = getEnglishTeamName(row.match, 'away');
     const bodyGivingSide = row.body ? getBodyGivingSide(row.body, row.match) : 'home';
-    const bodyPill = row.body ? formatBodyPillLabel(row.body, row.match) : '—';
     const overOdds = row.goal ? formatGoalCenterLabel(row.goal, 'over') : '—';
     const underOdds = row.goal ? formatGoalCenterLabel(row.goal, 'under') : '—';
 
@@ -401,7 +440,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         </p>
 
         {row.body ? (
-          <div className="bet-grid-row body">
+          <div className="bet-grid-row body bet-grid-row-teams">
             <button
               type="button"
               className={`bet-team-btn home${bodyGivingSide === 'home' ? ' giving' : ''}${isSelected(picks, String(row.match.id), 'body-home') ? ' selected' : ''}`}
@@ -413,10 +452,10 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               }
             >
               <span className="bet-team-name">{homeName}</span>
+              {bodyGivingSide === 'home' ? (
+                <span className="bet-team-odds-tag">{homeOddsLabel}</span>
+              ) : null}
             </button>
-            <div className="bet-odds-pill" aria-hidden>
-              {bodyPill}
-            </div>
             <button
               type="button"
               className={`bet-team-btn away${bodyGivingSide === 'away' ? ' giving' : ''}${isSelected(picks, String(row.match.id), 'body-away') ? ' selected' : ''}`}
@@ -428,12 +467,15 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               }
             >
               <span className="bet-team-name">{awayName}</span>
+              {bodyGivingSide === 'away' ? (
+                <span className="bet-team-odds-tag">{awayOddsLabel}</span>
+              ) : null}
             </button>
           </div>
         ) : null}
 
         {row.goal ? (
-          <div className="bet-grid-row goal">
+          <div className="bet-grid-row goal bet-grid-row-ou">
             <button
               type="button"
               className={`bet-label-btn over${isSelected(picks, String(row.match.id), 'goal-over') ? ' selected' : ''}`}
@@ -443,11 +485,9 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
                 onGoalSide('goal-over', overOdds, formatGoalPickLabel(row.goal, 'over'))
               }
             >
-              Over
+              <span>Over</span>
+              <span className="bet-team-odds-tag">{overOdds}</span>
             </button>
-            <div className="bet-odds-pill bet-odds-pill-goal" aria-hidden>
-              {overOdds}
-            </div>
             <button
               type="button"
               className={`bet-label-btn under${isSelected(picks, String(row.match.id), 'goal-under') ? ' selected' : ''}`}
@@ -457,7 +497,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
                 onGoalSide('goal-under', underOdds, formatGoalPickLabel(row.goal, 'under'))
               }
             >
-              Under
+              <span>Under</span>
+              <span className="bet-team-odds-tag">{underOdds}</span>
             </button>
           </div>
         ) : null}
@@ -502,7 +543,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
   const renderSubPage = (title: string, content: ReactNode) => (
     <div className={shellClass}>
       <div className="betting-app-shell hub-sub payment-flow">
-        <BettingChrome>
+        <BettingChrome showPromo={showBettingPromo}>
           <header className="betting-topbar dark">
             <button type="button" className="live-back-btn" onClick={() => setScreen('hub')}>
               ←
@@ -547,7 +588,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     const filterActive = Boolean(leagueFilter && leagueFilter.size < availableLeagues.length);
     return (
       <div className={shellClass}>
-        <BettingChrome>
+        <BettingChrome showPromo={showBettingPromo}>
           <div className="betting-app-shell dark bet-odds-screen">
           {renderBettingTopbar(screen === 'maung' ? 'မောင်း' : 'ဘော်ဒီ/ဂိုးပေါင်း')}
 
@@ -599,7 +640,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
 
   return (
     <div className={shellClass}>
-      <BettingChrome>
+      <BettingChrome showPromo={showBettingPromo}>
       <div className="betting-app-shell hub">
         <UserBetSidebar
           open={sidebarOpen}

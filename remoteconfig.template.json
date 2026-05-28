@@ -1,15 +1,15 @@
 {
   "parameters": {
     "app_min_version_code": {
-      "defaultValue": { "value": "15" },
+      "defaultValue": { "value": "16" },
       "description": "ဤ build ထက် နိမ့်ရင် update ပြမည်"
     },
     "app_latest_version_code": {
-      "defaultValue": { "value": "15" },
+      "defaultValue": { "value": "16" },
       "description": "နောက်ဆုံး versionCode"
     },
     "app_version_name": {
-      "defaultValue": { "value": "1.4.1" },
+      "defaultValue": { "value": "1.4.2" },
       "description": "ဥပမာ 1.4.1"
     },
     "app_download_url": {
@@ -17,11 +17,11 @@
       "description": "APK ဒေါင်းလုဒ် စာမျက်နှာ"
     },
     "app_release_notes": {
-      "defaultValue": { "value": "ပင်မ ပြင်ဆင်ချက် + Live Chat — v15" }
+      "defaultValue": { "value": "ဘော်ဒီ Over/Under + ကြေးပေးအသင်း UI — v16" }
     },
     "app_release_features": {
       "defaultValue": {
-        "value": "ပင်မ — ပြီးသွားပွဲ မပြတော့|Premier League / UCL / World Cup — လောင်းမည်|ပွဲရလဒ် မြန်ဆန်|Hero ဘောလုံးကန် Animation|Live Chat ချက်ချင်း"
+        "value": "ကြော်ငြာ တစ်ခုတည်း|ဘော်ဒီ Over/Under|ကြေးပေးအသင်း အစိမ်းကွက်|မောင်း/ဘော်ဒီ ကြေးပြင်ဆင်|Update v16"
       },
       "description": "Feature list — | ခွဲ"
     },

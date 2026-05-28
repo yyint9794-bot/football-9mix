@@ -24,13 +24,13 @@ const payload = {
   apkUrlSite: apkUrl,
   apkUrlCdn: apkUrl,
   forceUpdate: true,
-  releaseNotes: `ပင်မ ပြင်ဆင်ချက် + Live Chat — v${versionCode}`,
+  releaseNotes: `ဘော်ဒီ Over/Under + ကြေးပေးအသင်း UI — v${versionCode}`,
   releaseFeatures: [
-    'ပင်မ — ပြီးသွားပွဲ မပြတော့၊ လာမည့်ပွဲ ဦးစား',
-    'Premier League / Champions League / World Cup — လောင်းမည် ခလုတ်',
-    'ပွဲရလဒ် — မြန်ဆန်စွာ ရလဒ်ကြည့်ရှု',
-    'Web Hero — ဘောလုံးကန် Live Animation',
-    'Live Chat ချက်ချင်း မြင်ရမည်',
+    'ကြော်ငြာ တစ်ခုတည်း (ထပ်မပြတော့)',
+    'ဘော်ဒီ/ဂိုးပေါင်း — Over Under ပါမည်',
+    'ကြေးပေးအသင်း — အစိမ်းကွက်သေးသေး ကြေးပြမည်',
+    'ဘော်ဒီ ကြေးမပေါ်ရင် အလိုအလျောက် ပြန်ယူမည်',
+    'Update v16 — App ထဲမှ ဒေါင်းလုဒ်',
   ],
 };
 
