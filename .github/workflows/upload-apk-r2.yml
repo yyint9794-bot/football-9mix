@@ -36,13 +36,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node -e "const t=process.env.CLOUDFLARE_API_TOKEN||'';const a=process.env.CLOUDFLARE_ACCOUNT_ID||'';if(!t||!a)throw new Error('Missing CLOUDFLARE secrets');if(!/^cfut_/.test(t.trim()))throw new Error('CLOUDFLARE_API_TOKEN must start with cfut_');if(!/^[a-f0-9]{32}$/i.test(a.trim()))throw new Error('CLOUDFLARE_ACCOUNT_ID must be 32 hex');console.log('Secrets OK');"
+        run: node -e "const t=(process.env.CLOUDFLARE_API_TOKEN||'').trim();const a=(process.env.CLOUDFLARE_ACCOUNT_ID||'').trim();if(!t||!a)throw new Error('Missing CLOUDFLARE secrets');if(t.includes('curl')||t.includes('http'))throw new Error('Put cfut_ token only, not curl');if(!/^[a-f0-9]{32}$/i.test(a))throw new Error('CLOUDFLARE_ACCOUNT_ID must be 32 hex');console.log('Secrets OK, token length',t.length);"
 
-      - name: Upload to Cloudflare R2
+      - name: Upload to Cloudflare R2 (wrangler)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/upload-apk-r2.mjs
+
+      - name: Upload to R2 (S3 API fallback)
+        if: failure()
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node scripts/upload-apk-r2-s3.mjs
 
       - name: Verify download URL
         run: |

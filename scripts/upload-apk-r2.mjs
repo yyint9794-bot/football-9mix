@@ -7,6 +7,21 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { apkFileName, apkR2Key, loadApkHostingConfig } from './apk-hosting.mjs';
 import { requireCloudflareEnv } from './cloudflare-env.mjs';
+import { spawnSync as spawnUploadFallback } from 'node:child_process';
+
+function tryS3Fallback() {
+  if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+    return false;
+  }
+  console.log('\n⑤ S3-compatible R2 upload fallback…');
+  const result = spawnUploadFallback(process.execPath, [join(root, 'scripts', 'upload-apk-r2-s3.mjs')], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: true,
+    env: process.env,
+  });
+  return result.status === 0;
+}
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isWin = process.platform === 'win32';
@@ -22,7 +37,16 @@ if (!existsSync(versionedPath)) {
   process.exit(1);
 }
 
-const { token, accountId, wranglerEnv } = requireCloudflareEnv();
+let token;
+let accountId;
+let wranglerEnv;
+try {
+  ({ token, accountId, wranglerEnv } = requireCloudflareEnv());
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  console.error('\nLocal: project root မှာ .env.cloudflare.local ဖန်တီးပါ — docs/CLOUDFLARE_TOKEN.md');
+  process.exit(1);
+}
 const bytes = statSync(versionedPath).size;
 console.log(`Uploading APK (${Math.round(bytes / 1024 / 1024)} MB) → R2 "${config.bucket}"`);
 
@@ -93,10 +117,13 @@ function putObject(key, file) {
 
 const versionKey = apkR2Key(versionCode);
 if (!putObject(versionKey, versionedPath)) {
+  if (tryS3Fallback()) {
+    process.exit(0);
+  }
   console.error('\n❌ R2 upload failed');
   console.error('Cloudflare API Token permissions လိုသည်:');
-  console.error('  • Account → R2 → Edit');
-  console.error('  • Account → Workers R2 Storage → Edit (သို့မဟုတ် Read+Write)');
+  console.error('  • Account → Workers R2 Storage → Edit');
+  console.error('သို့မဟုတ် R2 → Manage R2 API Tokens → S3 keys → .env.cloudflare.local');
   console.error(`Bucket: ${config.bucket}`);
   console.error(`Key: ${versionKey}`);
   process.exit(1);

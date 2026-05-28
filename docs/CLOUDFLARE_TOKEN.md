@@ -31,6 +31,25 @@ Repository → Settings → Secrets → Actions:
 1. R2 → bucket **`9mix-football-apk`** (workflow က create လုပ်ပေးနိုင်သည်)
 2. Workers & Pages → **football-9mix** → Settings → **Bindings** → R2 **`APK_BUCKET`** → `9mix-football-apk`
 
+## R2 S3 keys (upload ပျက်ရင် — အကြံပြု)
+
+1. Cloudflare → **R2** → **Manage R2 API Tokens** → **Create API token**
+2. Permission: **Object Read & Write** → bucket `9mix-football-apk`
+3. GitHub Secrets ထပ်ထည့်:
+   - `R2_ACCESS_KEY_ID`
+   - `R2_SECRET_ACCESS_KEY`
+
+Workflow က wrangler မအောင်မြင်ရင် S3 API နဲ့ ပြန်တင်ပါမယ်။
+
+## Local upload (PC)
+
+```powershell
+copy .env.cloudflare.local.example .env.cloudflare.local
+# notepad .env.cloudflare.local — cfut_ token ထည့်
+npm run android:apk:full
+npm run upload:apk
+```
+
 ## Run workflow
 
 Actions → **Upload APK to R2** → Run workflow

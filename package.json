@@ -16,6 +16,8 @@
     "release:bump": "node scripts/release.mjs --bump",
     "sync:web-download": "node scripts/sync-web-download.mjs",
     "upload:apk": "node scripts/upload-apk-r2.mjs",
+    "upload:apk:s3": "node scripts/upload-apk-r2-s3.mjs",
+    "release:cloudflare": "npm run android:apk:full && npm run upload:apk && npm run pages:deploy",
     "firebase:login": "firebase login",
     "firebase:use": "firebase use ballpwal",
     "firebase:remoteconfig": "firebase deploy --only remoteconfig",
