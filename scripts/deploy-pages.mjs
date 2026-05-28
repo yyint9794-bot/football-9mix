@@ -69,7 +69,7 @@ if (run(['whoami']) !== 0) {
   fail('Cloudflare login မအောင်မြင် — token မှား သို့မဟုတ် permission မလုံလောက်');
 }
 
-console.log('\n② pages deploy (wrangler.web.toml — R2 မစစ်)…');
+console.log('\n② pages deploy…');
 const status = run([
   'pages',
   'deploy',
@@ -77,8 +77,6 @@ const status = run([
   '--project-name=football-9mix',
   '--branch=main',
   '--commit-dirty=true',
-  '--config',
-  'wrangler.web.toml',
 ]);
 if (status !== 0) {
   fail('Pages deploy မအောင်မြင် — Dashboard မှာ project football-9mix ရှိမရှိ စစ်');
