@@ -948,31 +948,32 @@ export async function getFootballMatches(
 }
 
 /** လောင်းကွင်း — MMK ကြေးဒေတာကိုသာ တိုက်ရိုက်ယူ (stream နှင့် မှားမယ့် ကြေး merge လျှော့) */
+const MMK_BETTING_LIVE_FALLBACK = ['/mmk-autokyay/livedata', '/mmk-autokyay/v3/live'];
+
 export async function getBettingMatches(
   signal?: AbortSignal,
   onUpdate?: (matches: Match[]) => void,
 ): Promise<Match[]> {
   let matches: Match[] = [];
 
-  for (const path of MMK_BETTING_ENDPOINTS) {
-    if (signal?.aborted) {
-      break;
-    }
-    try {
-      const batch = await fetchMmkMatches(path, signal);
-      matches = mergeUniqueMatches(matches, batch);
+  const paths = [...MMK_BETTING_ENDPOINTS, ...MMK_BETTING_LIVE_FALLBACK];
+  const batches = await Promise.allSettled(paths.map((path) => fetchMmkMatches(path, signal)));
+
+  for (const result of batches) {
+    if (result.status === 'fulfilled' && result.value.length) {
+      matches = mergeUniqueMatches(matches, result.value);
       onUpdate?.(matches);
-    } catch {
-      // endpoint တစ်ခု ပျက်ရင် ကျန်ကို ဆက်သုံး
     }
   }
 
   matches = enrichMatchesWithLogos(matches);
   onUpdate?.(matches);
 
-  return matches.filter(
+  const open = matches.filter(
     (match) => hasMyanmarOdds(match) && !isOddsClosed(match) && isOpenForBetting(match),
   );
+
+  return open.length ? open : matches.filter((match) => hasMyanmarOdds(match) && !isOddsClosed(match));
 }
 
 function resultDisplayKey(match: Match) {

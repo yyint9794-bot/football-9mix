@@ -169,7 +169,8 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     return bettingRows.filter((row) => leagueFilter.has(row.league));
   }, [bettingRows, leagueFilter, availableLeagues.length]);
 
-  const showBettingPromo = !Capacitor.isNativePlatform();
+  const isMobileAppShell = document.documentElement.classList.contains('mobile-app-mode');
+  const showBettingPromo = !Capacitor.isNativePlatform() && !isMobileAppShell;
 
   useEffect(() => {
     if (screen !== 'body-goal' && screen !== 'maung') {
@@ -603,9 +604,40 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               {loading ? <p className="bet-loading">API ကြေးဒေတာ ဖတ်နေပါတယ်…</p> : null}
               {error ? <p className="bet-error">{error}</p> : null}
               {!loading && !filteredRows.length ? (
-                <p className="bet-error">
-                  {filterActive ? 'ရွေးထားသော လိဂ်တွင် ကြေးမရှိပါ' : 'ယခု ကြေးမထုတ်ရသေးပါ'}
-                </p>
+                <div className="bet-empty-state">
+                  <p className="bet-error">
+                    {filterActive
+                      ? 'ရွေးထားသော လိဂ်တွင် ကြေးမရှိပါ'
+                      : error || 'ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ'}
+                  </p>
+                  {!filterActive ? (
+                    <button
+                      type="button"
+                      className="bet-retry-btn"
+                      onClick={() => {
+                        setLoading(true);
+                        setError('');
+                        void getBettingMatches(undefined, (partial) => {
+                          if (partial.length) {
+                            setMatches(partial);
+                            setLoading(false);
+                            setError('');
+                          }
+                        })
+                          .then((next) => {
+                            setMatches(next);
+                            if (!next.length) {
+                              setError('ယခု ကြေးမထုတ်ရသေးပါ — ခဏနေပြီး ထပ်စမ်းပါ');
+                            }
+                          })
+                          .catch(() => setError('ကြေးဒေတာ မရသေးပါ'))
+                          .finally(() => setLoading(false));
+                      }}
+                    >
+                      ကြေးပြန်ယူမည်
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               {leagueGroups.map((group) => (
                 <section className="bet-league-section" key={group.league}>

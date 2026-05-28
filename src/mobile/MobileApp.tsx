@@ -63,7 +63,7 @@ export function MobileApp() {
 
   return (
     <div className="mobile-app">
-      <MobileAppChrome>
+      <MobileAppChrome showPromo={tab !== 'bet'}>
         <main className="m-app-main">
           {tab === 'home' ? (
             <MobileHomeScreen

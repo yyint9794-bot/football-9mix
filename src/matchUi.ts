@@ -91,9 +91,9 @@ export function canWatchMatch(match: Match) {
   return hasStream(match) && !isCompletedMatch(match);
 }
 
-/** မောင်း / ဘော်ဒီ — ပြီးသွားပွဲ၊ ရလဒ်ပါပွဲ မပြရ */
+/** မောင်း / ဘော်ဒီ — ပြီးသွားပွဲ မပြရ (ဂိုးရှိလို့ပဲ မဖယ်ရ — တိုက်ရိုက်ပွဲမှာ ကြေးရှိနိုင်) */
 export function isOpenForBetting(match: Match) {
-  if (isCompletedMatch(match) || hasMatchScore(match)) {
+  if (isCompletedMatch(match) || isMatchFinished(match)) {
     return false;
   }
 

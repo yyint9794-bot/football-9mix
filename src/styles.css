@@ -3328,6 +3328,23 @@ a.primary-button.download-hero-btn,
   text-align: center;
 }
 
+.bet-empty-state {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.bet-retry-btn {
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #22c55e;
+  color: #052e16;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .bet-odds-screen .bet-loading,
 .bet-odds-screen .bet-error {
   padding: 16px;
