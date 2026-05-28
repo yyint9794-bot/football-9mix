@@ -1,0 +1,15 @@
+# Web deploy သာ (CI) — R2 binding မပါ (bucket မရှိရင် deploy မပျက်)
+name = "football-9mix"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "WALLET_KV"
+id = "bc9dd5cfce4b44d397e7c127bf418853"
+
+[vars]
+STREAM_REFERER = "https://ballpwal.org/"
+WALLET_ADMIN_USER = "admin"
+WALLET_KPAY_NUMBER = "09674646102"
+WALLET_WAVE_NUMBER = "09674646102"

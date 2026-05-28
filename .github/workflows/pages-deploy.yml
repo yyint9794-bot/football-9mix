@@ -1,4 +1,4 @@
-# Web သာ — app-version.json / UI အသစ် (APK build မစောင့်)
+# Web သာ — app-version.json / UI အသစ်
 name: Deploy web to Cloudflare Pages
 
 on:
@@ -13,6 +13,9 @@ concurrency:
 jobs:
   deploy-web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
     steps:
       - uses: actions/checkout@v4
 

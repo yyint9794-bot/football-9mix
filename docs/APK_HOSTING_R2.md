@@ -4,12 +4,22 @@ GitHub က file **100MB** ထက် မကြီးရ — APK က **Cloudflare 
 
 ## တစ်ခါပဲ setup (Cloudflare Dashboard)
 
-1. **R2** → **Create bucket** → 이름: `9mix-football-apk`
+Deploy error: `R2 bucket '9mix-football-apk' not found` ဆိုရင် အောက်လုပ်ပါ။
+
+1. **R2** → **Create bucket** → 이름: **`9mix-football-apk`** (အမည် တိတိကျကျ)
 2. **Workers & Pages** → project **football-9mix** → **Settings** → **Bindings**
 3. **Add binding** → **R2 bucket**
    - Variable name: `APK_BUCKET`
    - Bucket: `9mix-football-apk`
 4. GitHub Secrets (ရှိပြီးသား): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+
+သို့မဟုတ် terminal:
+
+```bash
+npx wrangler r2 bucket create 9mix-football-apk
+```
+
+Web deploy (app-version.json v15) က R2 မရှိလည်း `wrangler.web.toml` နဲ့ တက်နိုင်သည် — APK ဒေါင်းလုဒ်အတွက် bucket လိုပါသေးတယ်။
 
 ## နောက်တိုင်း release
 
