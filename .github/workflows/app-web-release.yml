@@ -51,6 +51,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/upload-apk-r2.mjs
 
+      - name: Build web for Pages
+        run: npm run build
+
       - name: Deploy site to Cloudflare Pages
         run: node scripts/deploy-pages.mjs
         env:

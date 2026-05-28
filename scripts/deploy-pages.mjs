@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireCloudflareEnv } from './cloudflare-env.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isWin = process.platform === 'win32';
@@ -14,33 +15,13 @@ function fail(message) {
   process.exit(1);
 }
 
-function cleanEnv(name) {
-  const raw = process.env[name];
-  if (!raw) {
-    return '';
-  }
-  return raw.trim().replace(/\s+/g, '');
-}
-
-const token = cleanEnv('CLOUDFLARE_API_TOKEN');
-const accountId = cleanEnv('CLOUDFLARE_ACCOUNT_ID');
-
-if (!token) {
-  fail('CLOUDFLARE_API_TOKEN မရှိ — GitHub Secrets စစ်ပါ');
-}
-if (!accountId) {
-  fail('CLOUDFLARE_ACCOUNT_ID မရှိ — GitHub Secrets စစ်ပါ');
-}
-if (token.includes('curl') || token.includes('Authorization') || token.includes('http')) {
-  fail(
-    'CLOUDFLARE_API_TOKEN မှား — curl command မထည့်ရ။ cfut_... token သာ ထည့်ပါ',
-  );
-}
-if (!/^cfut_[A-Za-z0-9_-]+$/.test(token)) {
-  console.warn('⚠ Token format မမှန်သလို — cfut_ နဲ့ စရမည်');
-}
-if (!/^[a-f0-9]{32}$/i.test(accountId)) {
-  console.warn(`⚠ Account ID format: ${accountId.length} chars (ဥပမာ 32 hex)`);
+let token;
+let accountId;
+let wranglerEnv;
+try {
+  ({ token, accountId, wranglerEnv } = requireCloudflareEnv());
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
 }
 
 const versionPath = join(root, 'dist', 'app-version.json');
@@ -51,15 +32,11 @@ const version = JSON.parse(readFileSync(versionPath, 'utf8'));
 console.log(`Deploying web v${version.versionName} (${version.versionCode}) → football-9mix`);
 
 function run(args) {
-  const result = spawnSync('npx', ['wrangler', ...args], {
+  const result = spawnSync('npx', ['wrangler', ...args, '--account-id', accountId], {
     cwd: root,
     stdio: 'inherit',
     shell: isWin,
-    env: {
-      ...process.env,
-      CLOUDFLARE_API_TOKEN: token,
-      CLOUDFLARE_ACCOUNT_ID: accountId,
-    },
+    env: wranglerEnv,
   });
   return result.status ?? 1;
 }

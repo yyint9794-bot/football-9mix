@@ -29,11 +29,29 @@
     <h1>9Mix Football APK</h1>
     <p>ဗားရှင်း <strong>15 (1.4.1)</strong></p>
     <p class="note">Cloudflare R2 — GitHub မသုံး (~10MB+)</p>
-    <a id="dl" href="#">APK ဒေါင်းလုဒ်</a>
+    <p id="status" class="note">ဒေါင်းလုဒ် ပြင်ဆင်နေသည်…</p>
+    <a id="dl" href="https://ballpwal.org/downloads/9mix-football-v15.apk">APK ဒေါင်းလုဒ် (v15)</a>
     <script>
-      var url = 'https://ballpwal.org/downloads/9mix-football-v15.apk';
-      document.getElementById('dl').href = url + '?cb=' + Date.now();
-      window.location.replace(document.getElementById('dl').href);
+      (function () {
+        var url = 'https://ballpwal.org/downloads/9mix-football-v15.apk';
+        var dl = document.getElementById('dl');
+        var status = document.getElementById('status');
+        dl.href = url + '?cb=' + Date.now();
+        fetch(url, { method: 'HEAD' })
+          .then(function (res) {
+            if (res.ok) {
+              status.textContent = 'ဒေါင်းလုဒ် အဆင်ပြေပါသည် — ခလုတ်နှိပ်ပါ';
+              return;
+            }
+            status.textContent =
+              'APK မတင်ရသေးပါ (HTTP ' +
+              res.status +
+              ') — GitHub Actions → Upload APK to R2 Run လုပ်ပါ';
+          })
+          .catch(function () {
+            status.textContent = 'ဆာဗာနှင့် မချိတ်ဆက်နိုင်ပါ — ခလုတ်ကို ထပ်စမ်းကြည့်ပါ';
+          });
+      })();
     </script>
   </body>
 </html>

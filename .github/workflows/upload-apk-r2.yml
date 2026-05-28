@@ -1,0 +1,54 @@
+# APK → Cloudflare R2 (ဒေါင်းလုဒ် "APK not found" ပြင်ရန်)
+name: Upload APK to R2
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: upload-apk-r2
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: chmod +x android/gradlew
+      - run: npm ci
+
+      - name: Build APK
+        run: npm run android:apk
+
+      - name: Ensure Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node -e "const t=process.env.CLOUDFLARE_API_TOKEN||'';const a=process.env.CLOUDFLARE_ACCOUNT_ID||'';if(!t||!a)throw new Error('Missing CLOUDFLARE secrets');if(!/^cfut_/.test(t.trim()))throw new Error('CLOUDFLARE_API_TOKEN must start with cfut_');if(!/^[a-f0-9]{32}$/i.test(a.trim()))throw new Error('CLOUDFLARE_ACCOUNT_ID must be 32 hex');console.log('Secrets OK');"
+
+      - name: Upload to Cloudflare R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/upload-apk-r2.mjs
+
+      - name: Verify download URL
+        run: |
+          sleep 5
+          code=$(curl -sI -o /dev/null -w "%{http_code}" "https://ballpwal.org/downloads/9mix-football-v15.apk" || echo "000")
+          echo "HTTP $code for /downloads/9mix-football-v15.apk"
+          if [ "$code" != "200" ]; then
+            echo "::warning::APK URL not 200 yet — Pages binding APK_BUCKET → 9mix-football-apk စစ်ပါ"
+          fi

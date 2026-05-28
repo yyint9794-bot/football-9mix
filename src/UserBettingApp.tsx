@@ -208,10 +208,10 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
     setBetStatus('');
   };
 
-  /** ဘော်ဒီ — ပွဲများစွာထဲက အသင်းတစ်သင်းသာ ရွေးနိုင် */
+  /** ဘော်ဒီ — ပွဲတစ်ပွဲလျှင် ဘော်ဒီ သို့မဟုတ် Over/Under တစ်ရွေးချယ်မှု */
   const toggleBodyPick = (
     row: BettingMatchRow,
-    side: 'body-home' | 'body-away',
+    side: BetSide,
     oddsLabel: string,
     summary: string,
     homeName: string,
@@ -269,7 +269,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
       }
     } else if (screen === 'body-goal') {
       if (bodyPicks.length !== 1) {
-        setBetStatus('ဘော်ဒီအတွက် အသင်းတစ်သင်းသာ ရွေးပါ');
+        setBetStatus('ဘော်ဒီ/ဂိုးပေါင်းအတွက် ရွေးချယ်မှု တစ်ခုသာ ရွေးပါ');
         return;
       }
     } else {
@@ -381,8 +381,16 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
       toggleMaungPick(row, side, oddsLabel, summary, homeName, awayName);
     };
 
-    const onBodyTeam = (side: 'body-home' | 'body-away', oddsLabel: string, summary: string) => {
+    const onBodySide = (side: BetSide, oddsLabel: string, summary: string) => {
       toggleBodyPick(row, side, oddsLabel, summary, homeName, awayName);
+    };
+
+    const onGoalSide = (side: 'goal-over' | 'goal-under', oddsLabel: string, summary: string) => {
+      if (mode === 'maung') {
+        onMaungSide(side, oddsLabel, summary);
+        return;
+      }
+      onBodySide(side, oddsLabel, summary);
     };
 
     return (
@@ -393,38 +401,38 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
         </p>
 
         {row.body ? (
-          <div className={`bet-grid-row body favor-${bodyGivingSide}`}>
+          <div className="bet-grid-row body">
             <button
               type="button"
-              className={`bet-team-btn home${isSelected(picks, String(row.match.id), 'body-home') ? ' selected' : ''}`}
+              className={`bet-team-btn home${bodyGivingSide === 'home' ? ' giving' : ''}${isSelected(picks, String(row.match.id), 'body-home') ? ' selected' : ''}`}
               disabled={row.closed}
               onClick={() =>
                 mode === 'maung'
                   ? onMaungSide('body-home', homeOddsLabel, homeSummary)
-                  : onBodyTeam('body-home', homeOddsLabel, homeSummary)
+                  : onBodySide('body-home', homeOddsLabel, homeSummary)
               }
             >
-              {homeName}
+              <span className="bet-team-name">{homeName}</span>
             </button>
             <div className="bet-odds-pill" aria-hidden>
               {bodyPill}
             </div>
             <button
               type="button"
-              className={`bet-team-btn away${isSelected(picks, String(row.match.id), 'body-away') ? ' selected' : ''}`}
+              className={`bet-team-btn away${bodyGivingSide === 'away' ? ' giving' : ''}${isSelected(picks, String(row.match.id), 'body-away') ? ' selected' : ''}`}
               disabled={row.closed}
               onClick={() =>
                 mode === 'maung'
                   ? onMaungSide('body-away', awayOddsLabel, awaySummary)
-                  : onBodyTeam('body-away', awayOddsLabel, awaySummary)
+                  : onBodySide('body-away', awayOddsLabel, awaySummary)
               }
             >
-              {awayName}
+              <span className="bet-team-name">{awayName}</span>
             </button>
           </div>
         ) : null}
 
-        {row.goal && mode === 'maung' ? (
+        {row.goal ? (
           <div className="bet-grid-row goal">
             <button
               type="button"
@@ -432,7 +440,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               disabled={row.closed}
               onClick={() =>
                 row.goal &&
-                onMaungSide('goal-over', overOdds, formatGoalPickLabel(row.goal, 'over'))
+                onGoalSide('goal-over', overOdds, formatGoalPickLabel(row.goal, 'over'))
               }
             >
               Over
@@ -446,7 +454,7 @@ export function UserBettingApp({ onClose, layout = 'modal' }: UserBettingAppProp
               disabled={row.closed}
               onClick={() =>
                 row.goal &&
-                onMaungSide('goal-under', underOdds, formatGoalPickLabel(row.goal, 'under'))
+                onGoalSide('goal-under', underOdds, formatGoalPickLabel(row.goal, 'under'))
               }
             >
               Under

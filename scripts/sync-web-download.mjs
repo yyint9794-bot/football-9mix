@@ -60,11 +60,29 @@ const apkHtml = `<!DOCTYPE html>
     <h1>9Mix Football APK</h1>
     <p>ဗားရှင်း <strong>${versionCode} (${versionName})</strong></p>
     <p class="note">Cloudflare R2 — GitHub မသုံး (~10MB+)</p>
-    <a id="dl" href="#">APK ဒေါင်းလုဒ်</a>
+    <p id="status" class="note">ဒေါင်းလုဒ် ပြင်ဆင်နေသည်…</p>
+    <a id="dl" href="${downloadUrl}">APK ဒေါင်းလုဒ် (v${versionCode})</a>
     <script>
-      var url = '${downloadUrl}';
-      document.getElementById('dl').href = url + '?cb=' + Date.now();
-      window.location.replace(document.getElementById('dl').href);
+      (function () {
+        var url = '${downloadUrl}';
+        var dl = document.getElementById('dl');
+        var status = document.getElementById('status');
+        dl.href = url + '?cb=' + Date.now();
+        fetch(url, { method: 'HEAD' })
+          .then(function (res) {
+            if (res.ok) {
+              status.textContent = 'ဒေါင်းလုဒ် အဆင်ပြေပါသည် — ခလုတ်နှိပ်ပါ';
+              return;
+            }
+            status.textContent =
+              'APK မတင်ရသေးပါ (HTTP ' +
+              res.status +
+              ') — Admin က GitHub Actions မှာ Upload APK to R2 လုပ်ရမည်';
+          })
+          .catch(function () {
+            status.textContent = 'ဆာဗာနှင့် မချိတ်ဆက်နိုင်ပါ — ခလုတ်ကို ထပ်စမ်းကြည့်ပါ';
+          });
+      })();
     </script>
   </body>
 </html>

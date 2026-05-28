@@ -202,12 +202,26 @@ function App() {
 
   useEffect(() => {
     let disposed = false;
+    const loadTimeout = window.setTimeout(() => {
+      if (!disposed) {
+        setLoading(false);
+      }
+    }, 14_000);
 
     const loadMatches = (signal?: AbortSignal) => {
-      getFootballMatches(signal)
+      getFootballMatches(signal, (partial) => {
+        if (!disposed && partial.length) {
+          setMatches(partial);
+          setLoading(false);
+          setError('');
+        }
+      })
         .then((nextMatches) => {
           if (!disposed) {
             setMatches(nextMatches);
+            if (nextMatches.length) {
+              setError('');
+            }
           }
         })
         .catch((err: Error) => {
@@ -218,6 +232,7 @@ function App() {
         .finally(() => {
           if (!disposed) {
             setLoading(false);
+            window.clearTimeout(loadTimeout);
           }
         });
     };
@@ -233,6 +248,7 @@ function App() {
       disposed = true;
       controller.abort();
       window.clearInterval(refreshTimer);
+      window.clearTimeout(loadTimeout);
     };
   }, []);
 
@@ -540,7 +556,7 @@ function App() {
 
       {error ? <div className="error-card">{error}</div> : null}
 
-      {loading ? (
+      {loading && !matches.length ? (
         <section className="match-grid">
           {Array.from({ length: 6 }).map((_, index) => (
             <div className="match-card skeleton" key={index} />

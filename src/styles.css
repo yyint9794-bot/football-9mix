@@ -3431,6 +3431,28 @@ a.primary-button.download-hero-btn,
   color: #e8f5e9;
 }
 
+.bet-team-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bet-team-name {
+  display: block;
+  width: 100%;
+}
+
+.bet-team-btn.giving {
+  box-shadow: inset 0 0 0 2px #1db954;
+  background: linear-gradient(180deg, #355a40 0%, #4a4a4a 100%);
+}
+
+.bet-team-btn.giving.selected {
+  background: linear-gradient(180deg, #2e6b3a 0%, #2e5c34 100%);
+}
+
 .bet-odds-pill {
   display: flex;
   align-items: center;

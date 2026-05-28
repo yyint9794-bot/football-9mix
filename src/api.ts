@@ -873,23 +873,49 @@ function mergeResultsIntoMatches(matches: Match[], resultMatches: Match[]) {
   return merged;
 }
 
+const MMK_FAST_LIVE_PATHS = ['/mmk-autokyay/livedata', '/mmk-autokyay/v3/live'];
+
 export async function getFootballMatches(
   signal?: AbortSignal,
   onUpdate?: (matches: Match[]) => void,
 ): Promise<Match[]> {
   let matches: Match[] = [];
-  try {
-    matches = enrichMatchesWithLogos(await fetchMatches(PRIMARY_VERSION, signal));
-  } catch {
-    // Htay API မရရင် MMK fallback များဖြင့် ဆက်ယူ
-  }
-  onUpdate?.(matches);
 
-  const fallbackResults = await Promise.allSettled(MMK_ENDPOINTS.map((path) => fetchMmkMatches(path, signal)));
+  const pushUpdate = () => {
+    if (matches.length) {
+      onUpdate?.(matches);
+    }
+  };
+
+  const htayTask = fetchMatches(PRIMARY_VERSION, signal)
+    .then((raw) => {
+      matches = mergeUniqueMatches(matches, enrichMatchesWithLogos(raw));
+      pushUpdate();
+    })
+    .catch(() => {
+      // Htay API မရရင် MMK fallback များဖြင့် ဆက်ယူ
+    });
+
+  const mmkFastTasks = MMK_FAST_LIVE_PATHS.map((path) =>
+    fetchMmkMatches(path, signal)
+      .then((batch) => {
+        matches = mergeUniqueMatches(matches, batch);
+        pushUpdate();
+      })
+      .catch(() => undefined),
+  );
+
+  await Promise.all([htayTask, ...mmkFastTasks]);
+
+  const remainingMmkPaths = MMK_ENDPOINTS.filter((path) => !MMK_FAST_LIVE_PATHS.includes(path));
+  const fallbackResults = await Promise.allSettled(
+    remainingMmkPaths.map((path) => fetchMmkMatches(path, signal)),
+  );
 
   for (const result of fallbackResults) {
     if (result.status === 'fulfilled') {
       matches = mergeUniqueMatches(matches, result.value);
+      pushUpdate();
     }
   }
 
